@@ -1,42 +1,42 @@
-import { createContext,useContext,useState,useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
-const AuthContext= createContext();
+const AuthContext = createContext();
 
-export const AuthProvider=({children})=>{
-    const [employee,setEmployee]=useState('')
-    const [alertMessage,setAlertMessage]=useState("")
+export const AuthProvider = ({ children }) => {
+  const [employee, setEmployee] = useState(null);
+  const [alertMessage, setAlertMessage] = useState("");
 
-    useEffect(()=>{
-        const storedEmployee=localStorage.getItem("employee");
-        const tokenExpiry=localStorage.getItem("tokenExpiry");
+  useEffect(() => {
+    const storedEmployee = localStorage.getItem("employee");
+    const tokenExpiry = localStorage.getItem("tokenExpiry");
 
-        if(storedEmployee && tokenExpiry){
-            const now=Date.now();
-            if(now>parseInt(tokenExpiry)){
-                logout();
-            }
-            else{
-                setEmployee(JSON.parse(storedEmployee));
-                const timeout=setTimeout(()=>{
-                    logout();
-                },parseInt(tokenExpiry)-now);
-                return () => clearTimeout(timeout);
-            }
-        }
-    },[])
-
-    const logout=()=>{
-        localStorage.removeItem("token")
-        localStorage.removeItem("employee")
-        setEmployee(null)
-        setAlertMessage("You have been logged out.")
+    if (storedEmployee && tokenExpiry) {
+      const now = Date.now();
+      if (now > parseInt(tokenExpiry)) {
+        logout();
+      } else {
+        setEmployee(JSON.parse(storedEmployee));
+        const timeout = setTimeout(() => {
+          logout();
+        }, parseInt(tokenExpiry) - now);
+        return () => clearTimeout(timeout);
+      }
     }
+  }, []);
 
-    return(
-        <AuthContext.Provider value={{user,setEmployee,alertMessage,setAlertMessage,logout}}>
-            {children}
-        </AuthContext.Provider>
-    )
-}
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("employee");
+    localStorage.removeItem("tokenExpiry");
+    setEmployee(null);
+    setAlertMessage("You have been logged out.");
+  };
 
-export const useAuth=()=>useContext(AuthContext)
+  return (
+    <AuthContext.Provider value={{ employee, setEmployee, alertMessage, setAlertMessage, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => useContext(AuthContext);
