@@ -236,7 +236,7 @@ const LoginForm = ({ onRegisterClick }) => {
     setIsSubmitting(true);
     try {
       const res = await verifyUser({ email: formData.email, otp: formData.otp });
-      if (res.message === "Login Successful") {
+      if (res.message === "Login Successfull") {
         // Set the employee in context
         setEmployee(res.employee);
         // Navigate to dashboard
