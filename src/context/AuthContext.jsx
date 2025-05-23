@@ -3,7 +3,10 @@ import { createContext, useContext, useState, useEffect } from "react";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [employee, setEmployee] = useState(null);
+  const [employee, setEmployee] = useState(() => {
+    const stored = localStorage.getItem("employee");
+    return stored ? JSON.parse(stored) : null;
+  });
   const [alertMessage, setAlertMessage] = useState("");
 
   useEffect(() => {

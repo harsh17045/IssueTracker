@@ -1,6 +1,9 @@
 import { Menu, Search, Filter, Bell, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Header = ({ onMenuClick }) => {
+  const { employee } = useAuth();
+  
   return (
     <header className="bg-white shadow-sm border-b px-6 py-4">
       <div className="flex items-center justify-between">
@@ -39,7 +42,9 @@ const Header = ({ onMenuClick }) => {
             <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
               <User size={18} className="text-gray-600" />
             </div>
-            <span className="text-sm font-medium text-gray-700">John Doe</span>
+            <span className="text-sm font-medium text-gray-700">
+              {employee?.name || 'User'}
+            </span>
           </div>
         </div>
       </div>

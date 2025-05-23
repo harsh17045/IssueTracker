@@ -171,8 +171,10 @@ import { useState } from 'react';
 import { Mail, Lock, AlertCircle, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser, verifyUser } from '../services/authService'; 
+import { useAuth } from '../context/AuthContext'; // Add this import
 
 const LoginForm = ({ onRegisterClick }) => {
+  const { setEmployee } = useAuth(); // Add this
   const [formData, setFormData] = useState({ email: '', password: '', otp: '' });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -234,11 +236,11 @@ const LoginForm = ({ onRegisterClick }) => {
     setIsSubmitting(true);
     try {
       const res = await verifyUser({ email: formData.email, otp: formData.otp });
-      console.log("Response",res);
-      if (res.message==="Login Successfull") {
-        console.log('Login successful', res);
+      if (res.message === "Login Successful") {
+        // Set the employee in context
+        setEmployee(res.employee);
+        // Navigate to dashboard
         navigate('/');
-        // redirect or call a callback
       } else {
         setErrors({ otp: res.message || 'Invalid OTP' });
       }

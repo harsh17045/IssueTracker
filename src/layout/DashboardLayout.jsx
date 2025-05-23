@@ -1,12 +1,18 @@
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext'; // Add this
 import Sidebar from '../components/Sidebar';
+import Header from '../components/Header';
+import HomePage from '../components/HomePage';
 
 const DashboardLayout = () => {
+  const { employee } = useAuth(); // Add this
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // const toggleSidebar = () => {
-  //   setSidebarOpen(!sidebarOpen);
-  // };
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  if (!employee) return null; // Add this protection
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -15,13 +21,13 @@ const DashboardLayout = () => {
       
       
       {/* Main Content */}
-      {/* <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex-1 flex flex-col lg:ml-0">
         <Header onMenuClick={toggleSidebar} />
         
         <main className="flex-1 overflow-y-auto">
           <HomePage />
         </main>
-      </div> */}
+      </div>
     </div>
   );
 };

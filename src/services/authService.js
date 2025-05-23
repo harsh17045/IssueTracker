@@ -36,5 +36,14 @@ export const verifyUser = async (userData) => {
     },
     body: JSON.stringify(userData),
   });
-  return response.json();
+  const data = await response.json();
+
+  if (data.token && data.employee) {
+    // Store token and employee data in localStorage
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("employee", JSON.stringify(data.employee));
+    localStorage.setItem("tokenExpiry", Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  }
+
+  return data;
 };

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from "react-router-dom";
 import { 
   Home, 
   Bug, 
@@ -12,8 +13,10 @@ import {
   Plus,
   User
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Sidebar = ({ isOpen, onClose }) => {
+  const { employee } = useAuth();
   const [activeItem, setActiveItem] = useState('dashboard');
 
   const menuItems = [
@@ -95,16 +98,19 @@ const Sidebar = ({ isOpen, onClose }) => {
               <User size={20} className="text-gray-600" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-800">Katha Patel</p>
-              <p className="text-xs text-gray-500">HR</p>
+              <p className="text-sm font-medium text-gray-800">{employee?.name || 'User'}</p>
+              <p className="text-xs text-gray-500">{employee?.department || 'Department'}</p>
             </div>
             <ChevronDown size={16} className="text-gray-400" />
           </div>
           
-          <button className="w-full flex items-center space-x-3 px-4 py-3 mt-2 text-blue-600 hover:bg-red-50 rounded-lg transition-colors">
+          <Link 
+            to="/logout" 
+            className="w-full flex items-center space-x-3 px-4 py-3 mt-2 text-blue-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
             <LogOut size={20} />
             <span className="font-medium">Logout</span>
-          </button>
+          </Link>
         </div>
       </div>
     </>
