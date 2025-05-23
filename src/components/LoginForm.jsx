@@ -206,10 +206,10 @@ const LoginForm = ({ onRegisterClick }) => {
     setIsSubmitting(true);
     try {
         const response = await loginUser(formData);
-        
         const data = await response.json();
+        console.log("Response data:",data)
         console.log("Data:",data);
-        if(data.message==="OTP sent to your email"){
+        if(data.message==="OTP sent to your email" || data.message==="Use the OTP sent to your mail"){
             
             setStep('otp');
             console.log(step);
