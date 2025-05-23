@@ -20,9 +20,9 @@ function App(){
     <>
       <Router>
         <Routes>
+          <Route path="/login" element={<AuthPage1/>}></Route>
           <Route path="/" element={<DashboardLayout/>}></Route>
           <Route path="/register" element={<AuthPage1/>}></Route>
-          <Route path="/login" element={<AuthPage1/>}></Route>
         </Routes>
       </Router>
     </>
