@@ -49,7 +49,7 @@ const Logout = () => {
             <button
               onClick={handleLogout}
               disabled={isLoading}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-purple-600 text-white font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-red-400"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-purple-600 text-white font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-purple-400"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
