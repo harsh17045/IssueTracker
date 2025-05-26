@@ -77,7 +77,7 @@ const RaiseTicket = () => {
       const response = await raiseTicket(formData);
       console.log('Server response:', response); // Add logging
 
-      if (response && response.success) { // Changed condition
+      if (response.message==='Ticket raised successfully') { // Changed condition
         alert('Ticket raised successfully!');
         // Reset form
         setFormData({

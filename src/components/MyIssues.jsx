@@ -1,8 +1,8 @@
 import { Bug } from 'lucide-react';
 
-const MyIssues = () => {
+const MyTicket = () => {
   // Mock data - replace with API call
-  const issues = [
+  const tickets = [
     {
       id: '1234',
       title: 'Login page not loading correctly on mobile devices',
@@ -40,15 +40,15 @@ const MyIssues = () => {
     <div className="p-6 space-y-6 bg-gray-50">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#4B2D87]">My Issues</h1>
-          <p className="text-gray-600 mt-1">View and manage your submitted issues</p>
+          <h1 className="text-2xl font-bold text-[#4B2D87]">My tickets</h1>
+          <p className="text-gray-600 mt-1">View and manage your submitted tickets</p>
         </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Your Issues</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Your tickets</h3>
             <div className="flex space-x-2">
               <button className="px-4 py-2 bg-[#4B2D87] text-white rounded-full hover:bg-[#5E3A9F] transition-colors">
                 All
@@ -63,13 +63,13 @@ const MyIssues = () => {
           </div>
         </div>
         <div className="p-6 space-y-4">
-          {issues.length === 0 ? (
+          {tickets.length === 0 ? (
             <div className="text-center py-10">
               <Bug size={48} className="text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500">No issues found</p>
+              <p className="text-gray-500">No tickets found</p>
             </div>
           ) : (
-            issues.map((issue) => (
+            tickets.map((issue) => (
               <div key={issue.id} className="bg-white rounded-2xl border hover:shadow-md transition-shadow cursor-pointer">
                 <div className="flex items-center justify-between p-4">
                   <div className="flex items-center space-x-4">
@@ -96,4 +96,4 @@ const MyIssues = () => {
   );
 };
 
-export default MyIssues;
+export default MyTicket;

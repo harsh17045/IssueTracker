@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider} from './context/AuthContext';
 import DashboardLayout from './layout/DashboardLayout';
 import HomePage from './components/HomePage'; // Add this import
-import RaiseIssue from './components/RaiseTicket';
+import RaiseTicket from './components/RaiseTicket';
 import MyIssues from './components/MyIssues';
 import Settings from './components/Settings';
 import AuthPage1 from './components/AuthPage1';
@@ -29,7 +29,7 @@ const App = () => {
             }
           >
             <Route index element={<HomePage />} />
-            <Route path="raise-issue" element={<RaiseIssue />} />
+            <Route path="raise-ticket" element={<RaiseTicket />} />
             <Route path="my-issues" element={<MyIssues />} />
             <Route path="settings" element={<Settings />} />
           </Route>
