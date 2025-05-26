@@ -53,7 +53,7 @@ export const raiseTicket = async (ticketData) => {
     console.log("Sending ticket data:", ticketData); // Add logging
     const token = localStorage.getItem("token");
 
-    const response = await fetch("http://localhost:5000/api/tickets/create", {
+    const response = await fetch(`${API_URL}/raise-ticket`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
