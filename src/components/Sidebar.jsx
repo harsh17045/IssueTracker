@@ -27,7 +27,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/' },
     { id: 'raiseTicket', label: 'Raise Ticket', icon: FileText, path: '/raise-ticket' },
-    { id: 'myIssues', label: 'My Issues', icon: Bug, path: '/my-issues' },
+    { id: 'myTickets', label: 'My Tickets', icon: Bug, path: '/my-tickets' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
   ];
 
