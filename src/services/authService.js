@@ -50,9 +50,7 @@ export const verifyUser = async (userData) => {
 
 export const raiseTicket = async (ticketData) => {
   try {
-    console.log("Sending ticket data:", ticketData); // Add logging
     const token = localStorage.getItem("token");
-
     const response = await fetch(`${API_URL}/raise-ticket`, {
       method: "POST",
       headers: {
@@ -63,8 +61,6 @@ export const raiseTicket = async (ticketData) => {
     });
 
     const data = await response.json();
-    console.log("Server response:", data); // Add logging
-
     if (!response.ok) {
       throw new Error(data.message || "Failed to create ticket");
     }

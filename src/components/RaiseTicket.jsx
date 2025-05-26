@@ -35,7 +35,6 @@ const RaiseTicket = () => {
   const validate = () => {
     const newErrors = {};
     
-    // Required field validations with trim() to check for empty strings
     if (!formData.title?.trim()) {
       newErrors.title = 'Title is required';
     }
@@ -44,18 +43,12 @@ const RaiseTicket = () => {
       newErrors.description = 'Description is required';
     }
     
-    // Only validate to_department since from_department is auto-set
     if (!formData.to_department) {
       newErrors.to_department = 'Please select a department';
     }
-    
-    // Priority validation - only if not set to default 'Normal'
     if (!formData.priority) {
       newErrors.priority = 'Please select a priority';
     }
-    
-    // Don't validate from_department and raisedBy as they're auto-populated
-    // from employee context
     
     console.log('Validation errors:', newErrors); // Add this for debugging
     return newErrors;
@@ -63,20 +56,16 @@ const RaiseTicket = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Hello");
+
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
-    console.log("Hello");
     setIsSubmitting(true);
     try {
-      console.log('Submitting ticket data:', formData); // Add logging
       const response = await raiseTicket(formData);
-      console.log('Server response:', response); // Add logging
-
       if (response.message==='Ticket raised successfully') { // Changed condition
         alert('Ticket raised successfully!');
         // Reset form
