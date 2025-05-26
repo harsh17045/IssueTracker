@@ -17,7 +17,7 @@ const RaiseTicket = () => {
     title: '',
     description: '',
     from_department: employee?.department || '', // Employee's department ID
-    priority: 'Normal', // Set default priority to Normal
+    priority: 'normal', // Set default priority to Normal
     raisedBy: employee?.employeeId || '', // Employee ID
     to_department: '', // Department ID to assign the Ticket to
   });
@@ -84,7 +84,7 @@ const RaiseTicket = () => {
           title: '',
           description: '',
           from_department: employee?.department || '',
-          priority: 'Normal',
+          priority: 'normal',
           raisedBy: employee?.employeeId || '',
           to_department: '',
         });
@@ -213,9 +213,9 @@ const RaiseTicket = () => {
               }`}
             >
               <option value="">Select priority</option>
-              <option value="Low">Low</option>
-              <option value="Normal">Normal</option>
-              <option value="High">High</option>
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
             </select>
             {errors.priority && (
               <p className="flex items-center mt-1 text-sm text-red-600">
