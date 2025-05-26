@@ -96,7 +96,9 @@ const DashboardLayout = () => {
         {/* Main Content Area with shadow and rounded corners */}
         <main className="flex-1 overflow-y-auto p-6">
           <div className="bg-white rounded-2xl shadow-sm h-full">
-            <Outlet />
+             
+                <Outlet />
+            
           </div>
         </main>
       </div>
