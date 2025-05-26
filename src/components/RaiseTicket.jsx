@@ -3,6 +3,8 @@ import { AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { raiseTicket } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const DEPARTMENTS = [
   { id: 'HR', name: 'HR' },
@@ -67,7 +69,14 @@ const RaiseTicket = () => {
     try {
       const response = await raiseTicket(formData);
       if (response.message==='Ticket raised successfully') { // Changed condition
-        alert('Ticket raised successfully!');
+        toast.success('Ticket raised successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
         // Reset form
         setFormData({
           title: '',
@@ -86,6 +95,7 @@ const RaiseTicket = () => {
       setErrors({ 
         general: error.message || 'Failed to raise ticket. Please try again.' 
       });
+      toast.error('Failed to raise ticket');
     } finally {
       setIsSubmitting(false);
     }
@@ -264,6 +274,7 @@ const RaiseTicket = () => {
           </button>
         </form>
       </div>
+      
     </div>
   );
 };

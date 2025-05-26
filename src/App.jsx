@@ -8,6 +8,7 @@ import Settings from './components/Settings';
 import AuthPage1 from './components/AuthPage1';
 import Logout from './components/Logout'; // Import the Logout component
 import ProtectedRoute from './components/ProtectedRoute'; // Import the ProtectedRoute component
+import { ToastContainer } from 'react-toastify';
 
 const App = () => {
   return (
@@ -35,6 +36,7 @@ const App = () => {
           </Route>
         </Routes>
       </Router>
+      <ToastContainer />
     </AuthProvider>
   );
 };
