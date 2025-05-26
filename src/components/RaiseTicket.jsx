@@ -5,9 +5,9 @@ import { raiseTicket } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 
 const DEPARTMENTS = [
-  { id: 'hr', name: 'HR' },
-  { id: 'admin_general', name: 'Admin General' },
-  { id: 'admin_it', name: 'Admin IT' },
+  { id: 'HR', name: 'HR' },
+  { id: 'Admin General', name: 'Admin General' },
+  { id: 'Admin IT', name: 'Admin IT' },
 ];
 
 const RaiseTicket = () => {
@@ -16,10 +16,10 @@ const RaiseTicket = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    fromDepartment: employee?.department || '', // Employee's department ID
+    from_department: employee?.department || '', // Employee's department ID
     priority: 'Normal', // Set default priority to Normal
     raisedBy: employee?.employeeId || '', // Employee ID
-    toDepartment: '', // Department ID to assign the Ticket to
+    to_department: '', // Department ID to assign the Ticket to
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,9 +44,9 @@ const RaiseTicket = () => {
       newErrors.description = 'Description is required';
     }
     
-    // Only validate toDepartment since fromDepartment is auto-set
-    if (!formData.toDepartment) {
-      newErrors.toDepartment = 'Please select a department';
+    // Only validate to_department since from_department is auto-set
+    if (!formData.to_department) {
+      newErrors.to_department = 'Please select a department';
     }
     
     // Priority validation - only if not set to default 'Normal'
@@ -54,7 +54,7 @@ const RaiseTicket = () => {
       newErrors.priority = 'Please select a priority';
     }
     
-    // Don't validate fromDepartment and raisedBy as they're auto-populated
+    // Don't validate from_department and raisedBy as they're auto-populated
     // from employee context
     
     console.log('Validation errors:', newErrors); // Add this for debugging
@@ -83,12 +83,12 @@ const RaiseTicket = () => {
         setFormData({
           title: '',
           description: '',
-          fromDepartment: employee?.department || '',
+          from_department: employee?.department || '',
           priority: 'Normal',
           raisedBy: employee?.employeeId || '',
-          toDepartment: '',
+          to_department: '',
         });
-        navigate('/my-issues');
+        navigate('/my-tickets'); // Redirect to My Issues page
       } else {
         throw new Error(response?.message || 'Failed to raise ticket');
       }
@@ -169,9 +169,9 @@ const RaiseTicket = () => {
               disabled
               className="w-full py-3 px-4 border rounded-full bg-gray-100 text-gray-600 cursor-not-allowed"
             />
-            {errors.fromDepartment && (
+            {errors.from_department && (
               <p className="flex items-center mt-1 text-sm text-red-600">
-                <AlertCircle size={14} className="mr-1" /> {errors.fromDepartment}
+                <AlertCircle size={14} className="mr-1" /> {errors.from_department}
               </p>
             )}
           </div>
@@ -180,11 +180,11 @@ const RaiseTicket = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">To Department</label>
             <select
-              name="toDepartment"
-              value={formData.toDepartment}
+              name="to_department"
+              value={formData.to_department}
               onChange={handleChange}
               className={`w-full py-3 px-4 border rounded-full focus:outline-none focus:ring-2 ${
-                errors.toDepartment ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-[#4B2D87]'
+                errors.to_department ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-[#4B2D87]'
               }`}
             >
               <option value="">Select department</option>
@@ -194,9 +194,9 @@ const RaiseTicket = () => {
                 </option>
               ))}
             </select>
-            {errors.toDepartment && (
+            {errors.to_department && (
               <p className="flex items-center mt-1 text-sm text-red-600">
-                <AlertCircle size={14} className="mr-1" /> {errors.toDepartment}
+                <AlertCircle size={14} className="mr-1" /> {errors.to_department}
               </p>
             )}
           </div>
