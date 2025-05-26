@@ -47,3 +47,34 @@ export const verifyUser = async (userData) => {
 
   return data;
 };
+
+export const raiseTicket = async (ticketData) => {
+  try {
+    console.log("Sending ticket data:", ticketData); // Add logging
+    const token = localStorage.getItem("token");
+
+    const response = await fetch("http://localhost:5000/api/tickets/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(ticketData),
+    });
+
+    const data = await response.json();
+    console.log("Server response:", data); // Add logging
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to create ticket");
+    }
+
+    return {
+      success: true,
+      ...data,
+    };
+  } catch (error) {
+    console.error("Ticket creation error:", error); // Add error logging
+    throw error;
+  }
+};

@@ -27,7 +27,7 @@ const Logout = () => {
 
       {/* Logout Modal */}
       <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div className="relative bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+        <div className="relative bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4">
           <div className="text-center">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
               Confirm Logout
@@ -42,14 +42,14 @@ const Logout = () => {
             <button
               onClick={handleCancel}
               disabled={isLoading}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200"
             >
               Cancel
             </button>
             <button
               onClick={handleLogout}
               disabled={isLoading}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-red-400"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-purple-600 text-white font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-red-400"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center">
