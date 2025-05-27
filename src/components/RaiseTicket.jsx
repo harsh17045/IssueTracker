@@ -19,7 +19,6 @@ const RaiseTicket = () => {
     title: '',
     description: '',
     from_department: employee?.department || '', // Employee's department ID
-    priority: 'normal', // Set default priority to Normal
     raisedBy: employee?.employeeId || '', // Employee ID
     to_department: '', // Department ID to assign the Ticket to
   });
@@ -48,10 +47,7 @@ const RaiseTicket = () => {
     if (!formData.to_department) {
       newErrors.to_department = 'Please select a department';
     }
-    if (!formData.priority) {
-      newErrors.priority = 'Please select a priority';
-    }
-    
+  
     console.log('Validation errors:', newErrors); // Add this for debugging
     return newErrors;
   };
@@ -82,7 +78,6 @@ const RaiseTicket = () => {
           title: '',
           description: '',
           from_department: employee?.department || '',
-          priority: 'normal',
           raisedBy: employee?.employeeId || '',
           to_department: '',
         });
@@ -196,29 +191,6 @@ const RaiseTicket = () => {
             {errors.to_department && (
               <p className="flex items-center mt-1 text-sm text-red-600">
                 <AlertCircle size={14} className="mr-1" /> {errors.to_department}
-              </p>
-            )}
-          </div>
-
-          {/* Priority */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-            <select
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              className={`w-full py-3 px-4 border rounded-full focus:outline-none focus:ring-2 ${
-                errors.priority ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-[#4B2D87]'
-              }`}
-            >
-              <option value="">Select priority</option>
-              <option value="low">Low</option>
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-            </select>
-            {errors.priority && (
-              <p className="flex items-center mt-1 text-sm text-red-600">
-                <AlertCircle size={14} className="mr-1" /> {errors.priority}
               </p>
             )}
           </div>

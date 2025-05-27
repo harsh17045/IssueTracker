@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertTriangle, CheckCircle, Clock, Bug } from 'lucide-react';
 import { getMyTickets } from '../services/authService';
 import { toast } from 'react-toastify';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 const StatsCard = ({ title, value, icon, color }) => {
   return (
@@ -33,7 +33,7 @@ const TicketCard = ({ ticket, index }) => {
           <div>
             <p className="text-sm font-medium text-gray-900">{index + 1}</p>
             <p className="text-xs text-gray-500">
-              {formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })}
+              {format(new Date(ticket.createdAt), 'MMM dd, yyyy h:mm a')}
             </p>
           </div>
           <div>

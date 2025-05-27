@@ -98,7 +98,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-white">{employee?.name || 'User'}</p>
-              <p className="text-xs text-gray-300">{employee?.department || 'Department'}</p>
+              <p className="text-xs text-gray-300">Department - {employee?.department || 'Department'}</p>
             </div>
             <ChevronDown size={16} className="text-white" />
           </div>
