@@ -77,21 +77,22 @@ const MyTickets = () => {
                 <div className="flex items-center justify-between p-4">
                   <div className="flex items-center space-x-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{index + 1}</p> {/* Serial number instead of ticket._id */}
-                      <p className="text-xs text-gray-500">
-                        {format(new Date(ticket.createdAt), 'MMM dd, yyyy - h:mm a')}
-                      </p>
+                      <p className="text-sm font-medium text-gray-900">{index + 1}.</p> {/* Serial number instead of ticket._id */}
+                      
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">
                         {ticket.to_department?.name || 'Unknown Department'}
                       </p>
-                      <p className="text-xs text-gray-500">{ticket.title}</p>
+                      <p className="text-xs text-gray-500">Issue Regarding {ticket.title}</p>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[ticket.status] || 'bg-gray-100 text-gray-800'}`}>
+                  <span className={`px-2 py-1 ml-160 rounded-full text-xs font-medium ${statusColors[ticket.status] || 'bg-gray-100 text-gray-800'}`}>
                     {ticket.status || 'Unknown'}
                   </span>
+                  <p className="text-xs text-gray-500">
+                        {format(new Date(ticket.createdAt), 'MMM dd, yyyy - h:mm a')}
+                      </p>
                 </div>
               </div>
             ))

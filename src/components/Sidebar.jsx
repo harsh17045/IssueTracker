@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from '../context/AuthContext';
 import { 
   Home, 
   Bug, 
@@ -8,32 +9,63 @@ import {
   LogOut, 
   X,
   ChevronDown,
-  User
+  User,
+  Lock // Add Lock to imports
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 
-const Sidebar = ({ isOpen, onClose }) => {
-  const { employee } = useAuth(); // Removed logout from useAuth
-  const navigate = useNavigate();
+const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
+  const navigate = useNavigate(); // Add this back
   const location = useLocation();
   const [activeItem, setActiveItem] = useState('dashboard');
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef(null);
 
+  const { employee } = useAuth();
   // Sync active item with current route
   useEffect(() => {
     const path = location.pathname.split('/')[1] || 'dashboard';
     setActiveItem(path);
   }, [location.pathname]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle profile click
+  const handleProfileClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowProfileMenu(prev => !prev);
+  };
+
+  const handleLogoutClick = () => {
+    navigate('/logout'); // Navigate to logout page instead of handling logout directly
+  };
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/' },
     { id: 'raiseTicket', label: 'Raise Ticket', icon: FileText, path: '/raise-ticket' },
     { id: 'myTickets', label: 'My Tickets', icon: Bug, path: '/my-tickets' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
+    { 
+      id: 'profile', 
+      label: employee ? employee.name : 'Profile', // Use employee name if available
+      icon: User,
+      hasSubmenu: true,
+      submenu: [
+        { id: 'viewProfile', label: 'Profile', icon: User, path: '/profile' },
+        { id: 'changePassword', label: 'Change Password', icon: Lock, path: '/change-password' }
+      ]
+    }
   ];
-
-  const handleLogout = () => {
-    navigate('/logout'); // Changed to redirect to logout page instead of direct logout
-  };
 
   return (
     <>
@@ -46,7 +78,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       )}
       
       {/* Sidebar */}
-      <div className={`fixed left-0 top-0 h-full w-64 bg-[#4B2D87] shadow-lg transform transition-transform duration-300 z-50 ${
+      <div className={`fixed left-0 top-0 h-full w-64 bg-[#4B2D87] shadow-lg transform transition-transform duration-300 z-50 flex flex-col ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0 lg:static lg:z-auto rounded-r-3xl`}>
         
@@ -71,6 +103,48 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
+              
+              if (item.hasSubmenu) {
+                return (
+                  <div key={item.id} ref={profileMenuRef}>
+                    <div
+                      onClick={handleProfileClick}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors cursor-pointer ${
+                        showProfileMenu ? 'bg-[#5E3A9F] text-white' : 'text-white hover:bg-[#5E3A9F]'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Icon size={20} className="text-white" />
+                        <span className="font-medium">{item.label}</span>
+                      </div>
+                      <ChevronDown
+                        size={16}
+                        className={`text-white transform transition-transform duration-200 ${
+                          showProfileMenu ? "rotate-180" : ""
+                        }`}
+                      />
+                    </div>
+                    
+                    {/* Submenu */}
+                    {showProfileMenu && (
+                      <div className="ml-4 mt-1 space-y-1">
+                        {item.submenu.map((subItem) => (
+                          <Link
+                            key={subItem.id}
+                            to={subItem.path}
+                            onClick={() => setShowProfileMenu(false)}
+                            className="flex items-center space-x-3 px-4 py-2 text-white hover:bg-[#6B4EA5] rounded-lg transition-colors"
+                          >
+                            <subItem.icon size={18} />
+                            <span>{subItem.label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.id}
@@ -90,22 +164,11 @@ const Sidebar = ({ isOpen, onClose }) => {
           </div>
         </nav>
 
-        {/* User Profile */}
-        <div className="p-4 border-t border-[#5E3A9F]">
-          <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-[#5E3A9F] cursor-pointer">
-            <div className="w-10 h-10 bg-[#5E3A9F] rounded-full flex items-center justify-center">
-              <User size={20} className="text-white" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-white">{employee?.name || 'User'}</p>
-              <p className="text-xs text-gray-300">Department - {employee?.department || 'Department'}</p>
-            </div>
-            <ChevronDown size={16} className="text-white" />
-          </div>
-          
-          <button 
-            onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-4 py-3 mt-2 text-white hover:bg-[#5E3A9F] rounded-lg transition-colors"
+        {/* Logout Button */}
+        <div className="p-4 border-t border-[#5E3A9F] mt-auto">
+          <button
+            onClick={handleLogoutClick}
+            className="w-full flex items-center space-x-3 px-4 py-3 text-white hover:bg-[#5E3A9F] rounded-lg transition-colors"
           >
             <LogOut size={20} className="text-white" />
             <span className="font-medium">Logout</span>

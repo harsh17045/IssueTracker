@@ -10,6 +10,8 @@ import AuthPage1 from './components/AuthPage1';
 import Logout from './components/Logout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ToastContainer } from 'react-toastify';
+import Profile from './components/Profile';
+import ChangePassword from './components/ChangePassword';
 
 const App = () => {
   return (
@@ -34,6 +36,8 @@ const App = () => {
             <Route path="raise-ticket" element={<RaiseTicket />} />
             <Route path="my-tickets" element={<MyTicket />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="change-password" element={<ChangePassword />} />
           </Route>
         </Routes>
         <ToastContainer />
