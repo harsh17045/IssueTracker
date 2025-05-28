@@ -123,19 +123,18 @@ export const getProfile = async () => {
 
 export const updateProfile = async (profileData) => {
   try {
-
     console.log("Profile data in authService:", profileData);
-    
+
     const token = localStorage.getItem("token");
     const response = await fetch(`${API_URL}/update-profile`, {
-      method: "PUT",
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(profileData),
     });
-    console.log("Response status:", response);
+    console.log("Response status:", response.status);
 
     const data = await response.json();
     if (!response.ok) {
@@ -145,6 +144,32 @@ export const updateProfile = async (profileData) => {
     return data.employee;
   } catch (error) {
     console.error("Error updating profile:", error);
+    throw error;
+  }
+};
+
+export const changePassword = async (passwordData) => {
+  try {
+    console.log("Password data in authService:", passwordData);
+    const token = localStorage.getItem("token");
+    console.log("Token in authService:", token);
+    const response = await fetch(`${API_URL}/change-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(passwordData),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to change password");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error changing password:", error);
     throw error;
   }
 };

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Lock, AlertCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { changePassword } from '../services/authService';
 
 const ChangePassword = () => {
   const [formData, setFormData] = useState({
@@ -8,11 +9,42 @@ const ChangePassword = () => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add password change logic here
-    toast.success('Password changed successfully');
+    
+    // Validate passwords
+    if (formData.newPassword !== formData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (formData.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters long');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await changePassword({
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword
+      });
+      
+      // Clear form
+      setFormData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
+      toast.success('Password changed successfully');
+    } catch (error) {
+      toast.error(error.message || 'Failed to change password');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -62,9 +94,10 @@ const ChangePassword = () => {
 
           <button
             type="submit"
-            className="w-full px-4 py-2 text-sm font-medium text-white bg-[#4B2D87] rounded-lg hover:bg-[#5E3A9F] focus:outline-none"
+            disabled={loading}
+            className="w-full px-4 py-2 text-sm font-medium text-white bg-[#4B2D87] rounded-lg hover:bg-[#5E3A9F] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Change Password
+            {loading ? 'Changing Password...' : 'Change Password'}
           </button>
         </form>
       </div>
