@@ -97,3 +97,54 @@ export const getMyTickets = async () => {
     throw error;
   }
 };
+
+export const getProfile = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_URL}/get-profile`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to fetch profile");
+    }
+
+    return data.employee;
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    throw error;
+  }
+};
+
+export const updateProfile = async (profileData) => {
+  try {
+
+    console.log("Profile data in authService:", profileData);
+    
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_URL}/update-profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(profileData),
+    });
+    console.log("Response status:", response);
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to update profile");
+    }
+
+    return data.employee;
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    throw error;
+  }
+};
