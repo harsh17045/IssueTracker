@@ -1,122 +1,118 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { raiseTicket } from '../services/authService';
+import { raiseTicket, getAllDepartments } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
-const DEPARTMENTS = [
-  { id: 'HR', name: 'HR' },
-  { id: 'Admin General', name: 'Admin General' },
-  { id: 'Admin IT', name: 'Admin IT' },
-];
 
 const RaiseTicket = () => {
   const { employee } = useAuth();
   const navigate = useNavigate();
+  
+  // Initialize departments as an empty array
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    from_department: employee?.department || '', // Employee's department ID
-    raisedBy: employee?.employeeId || '', // Employee ID
-    to_department: '', // Department ID to assign the Ticket to
+    from_department: employee?.department || '',
+    raisedBy: employee?.employeeId || '',
+    to_department: ''
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      setLoading(true);
+      try {
+        const data = await getAllDepartments();
+        console.log('Fetched departments:', data); // Debug log
+        
+        // Validate department structure
+        const validDepartments = data.filter(dept => 
+          dept && (dept._id || dept.id) && dept.name
+        );
+        
+        if (validDepartments.length === 0) {
+          console.warn('No valid departments found in response');
+          toast.warning('No departments available');
+        }
+
+        setDepartments(validDepartments);
+      } catch (error) {
+        console.error('Failed to fetch departments:', error);
+        toast.error('Failed to load departments');
+        setDepartments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDepartments();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
     }
   };
 
   const validate = () => {
     const newErrors = {};
-    
-    if (!formData.title?.trim()) {
+    if (!formData.title.trim()) {
       newErrors.title = 'Title is required';
     }
-    
-    if (!formData.description?.trim()) {
+    if (!formData.description.trim()) {
       newErrors.description = 'Description is required';
     }
-    
     if (!formData.to_department) {
       newErrors.to_department = 'Please select a department';
     }
-  
-    console.log('Validation errors:', newErrors); // Add this for debugging
     return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const response = await raiseTicket(formData);
-      if (response.message==='Ticket raised successfully') { // Changed condition
-        toast.success('Ticket raised successfully!', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-        // Reset form
-        setFormData({
-          title: '',
-          description: '',
-          from_department: employee?.department || '',
-          raisedBy: employee?.employeeId || '',
-          to_department: '',
-        });
-        navigate('/my-tickets'); // Redirect to My Issues page
-      } else {
-        throw new Error(response?.message || 'Failed to raise ticket');
-      }
+      console.log('Submitting form data:', formData); // Debug log
+      await raiseTicket(formData);
+      toast.success('Ticket raised successfully');
+      navigate('/my-tickets');
     } catch (error) {
-      console.error('Error raising ticket:', error); // Add error logging
-      setErrors({ 
-        general: error.message || 'Failed to raise ticket. Please try again.' 
-      });
-      toast.error('Failed to raise ticket');
+      toast.error(error.message || 'Failed to raise ticket');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  
   return (
-    <div className="p-6 space-y-6 bg-gray-50">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#4B2D87]">Raise a New Ticket</h1>
-          <p className="text-gray-600 mt-1">Submit a new ticket for review</p>
-        </div>
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      <div>
+        <h1 className="text-2xl font-bold text-[#4B2D87]">Raise a Ticket</h1>
+        <p className="text-gray-600 mt-1">Submit a new ticket for assistance</p>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border p-6">
-        {errors.general && (
-          <p className="text-red-600 mb-3 flex items-center text-sm">
-            <AlertCircle size={14} className="mr-1" /> {errors.general}
-          </p>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Title */}
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ticket Title</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
             <input
               type="text"
               name="title"
@@ -125,7 +121,7 @@ const RaiseTicket = () => {
               className={`w-full py-3 px-4 border rounded-full focus:outline-none focus:ring-2 ${
                 errors.title ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-[#4B2D87]'
               }`}
-              placeholder="Enter Ticket title"
+              placeholder="Enter ticket title"
             />
             {errors.title && (
               <p className="flex items-center mt-1 text-sm text-red-600">
@@ -134,18 +130,17 @@ const RaiseTicket = () => {
             )}
           </div>
 
-          {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
+              rows={4}
               className={`w-full py-3 px-4 border rounded-lg focus:outline-none focus:ring-2 ${
                 errors.description ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-[#4B2D87]'
               }`}
-              placeholder="Describe the Ticket in detail"
-              rows="5"
+              placeholder="Describe your issue"
             />
             {errors.description && (
               <p className="flex items-center mt-1 text-sm text-red-600">
@@ -154,23 +149,6 @@ const RaiseTicket = () => {
             )}
           </div>
 
-          {/* From Department (Non-editable, displays employee's department) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">From Department</label>
-            <input
-              type="text"
-              value={employee?.department || 'Not assigned'}
-              disabled
-              className="w-full py-3 px-4 border rounded-full bg-gray-100 text-gray-600 cursor-not-allowed"
-            />
-            {errors.from_department && (
-              <p className="flex items-center mt-1 text-sm text-red-600">
-                <AlertCircle size={14} className="mr-1" /> {errors.from_department}
-              </p>
-            )}
-          </div>
-
-          {/* To Department (Dropdown) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">To Department</label>
             <select
@@ -180,10 +158,11 @@ const RaiseTicket = () => {
               className={`w-full py-3 px-4 border rounded-full focus:outline-none focus:ring-2 ${
                 errors.to_department ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-[#4B2D87]'
               }`}
+              disabled={loading}
             >
               <option value="">Select department</option>
-              {DEPARTMENTS.map((dept) => (
-                <option key={dept.id} value={dept.id}>
+              {Array.isArray(departments) && departments.map((dept) => (
+                <option key={dept._id || dept.id} value={dept.name}>
                   {dept.name}
                 </option>
               ))}
@@ -195,58 +174,17 @@ const RaiseTicket = () => {
             )}
           </div>
 
-          {/* Raised By (Non-editable, hidden in UI but included in submission) */}
-          <input
-            type="hidden"
-            name="raisedBy"
-            value={formData.raisedBy}
-          />
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`
-              w-full py-3 px-6 rounded-full 
-              text-white font-medium 
-              transition-all duration-200
-              flex items-center justify-center
-              ${isSubmitting 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-[#4B2D87] hover:bg-[#5E3A9F] hover:shadow-lg transform hover:-translate-y-0.5'
-              }
-            `}
-          >
-            {isSubmitting ? (
-              <>
-                <svg 
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  fill="none" 
-                  viewBox="0 0 24 24"
-                >
-                  <circle 
-                    className="opacity-25" 
-                    cx="12" 
-                    cy="12" 
-                    r="10" 
-                    stroke="currentColor" 
-                    strokeWidth="4"
-                  />
-                  <path 
-                    className="opacity-75" 
-                    fill="currentColor" 
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Raising Ticket...
-              </>
-            ) : (
-              'Submit Ticket'
-            )}
-          </button>
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 py-3 bg-[#4B2D87] text-white rounded-full hover:bg-[#5E3A9F] transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Ticket'}
+            </button>
+          </div>
         </form>
       </div>
-      
     </div>
   );
 };

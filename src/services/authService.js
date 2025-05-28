@@ -77,23 +77,41 @@ export const raiseTicket = async (ticketData) => {
 
 export const getMyTickets = async () => {
   try {
-    const token = localStorage.getItem("token");
-    const response = await fetch(`${API_URL}/my-tickets`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to fetch tickets");
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
     }
 
-    return data.tickets;
+    const response = await fetch(`${API_URL}/my-tickets`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    console.log("Response : ", response);
+    const data = await response.json();
+    console.log('Tickets API Response:', data); // Debug log
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch tickets');
+    }
+
+    // Check if data is an array or has a tickets property
+    const tickets = Array.isArray(data) ? data : data.tickets || [];
+    
+    // Transform tickets to ensure consistent structure
+    return tickets.map(ticket => ({
+      _id: ticket._id,
+      title: ticket.title || '',
+      description: ticket.description || '',
+      status: ticket.status || 'open',
+      to_department: ticket.to_department || { id: '', name: 'Unknown Department' },
+      createdAt: ticket.createdAt || new Date().toISOString()
+    }));
+
   } catch (error) {
-    console.error("Error fetching tickets:", error);
+    console.error('Error fetching tickets:', error);
     throw error;
   }
 };
@@ -216,6 +234,73 @@ export const resetPassword = async (email, otp, newPassword) => {
     return data;
   } catch (error) {
     console.error('Reset password error:', error);
+    throw error;
+  }
+};
+
+export const updateTicket = async (ticketId, updateData) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_URL}/update-ticket/${ticketId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: updateData.title,
+        description: updateData.description,
+        to_department: updateData.to_department
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to update ticket");
+    }
+
+    return data.ticket;
+  } catch (error) {
+    console.error("Error updating ticket:", error);
+    throw error;
+  }
+};
+
+export const getAllDepartments = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_URL}/all-departments`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    console.log('Departments API Response:', data); // Debug log
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch departments');
+    }
+
+    // Extract departments from the 'depts' property
+    if (!data.depts || !Array.isArray(data.depts)) {
+      console.error('Invalid departments data structure:', data);
+      return [];
+    }
+
+    // Return the departments array with consistent structure
+    return data.depts.map(dept => ({
+      _id: dept._id,
+      name: dept.name
+    }));
+
+  } catch (error) {
+    console.error('Error fetching departments:', error);
     throw error;
   }
 };

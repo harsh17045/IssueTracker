@@ -4,8 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { 
   Home, 
   Bug, 
-  FileText, 
-  Settings, 
+  FileText,
   LogOut, 
   X,
   ChevronDown,
@@ -50,14 +49,21 @@ const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
     navigate('/logout'); // Navigate to logout page instead of handling logout directly
   };
 
+  // Update the menu items array
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/' },
     { id: 'raiseTicket', label: 'Raise Ticket', icon: FileText, path: '/raise-ticket' },
     { id: 'myTickets', label: 'My Tickets', icon: Bug, path: '/my-tickets' },
-    { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
     { 
       id: 'profile', 
-      label: employee ? employee.name : 'Profile', // Use employee name if available
+      label: (
+        <div className="flex flex-col">
+          <span>{employee?.name || 'Profile'}</span>
+          <span className="text-sm text-gray-300">
+            {employee?.department ? `Department - ${employee.department}` : ''}
+          </span>
+        </div>
+      ),
       icon: User,
       hasSubmenu: true,
       submenu: [
@@ -115,7 +121,14 @@ const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
                     >
                       <div className="flex items-center space-x-3">
                         <Icon size={20} className="text-white" />
-                        <span className="font-medium">{item.label}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{employee?.name || 'Profile'}</span>
+                          {employee?.department && (
+                            <span className="text-sm text-gray-300">
+                              Department - {employee.department}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <ChevronDown
                         size={16}

@@ -5,7 +5,6 @@ import DashboardLayout from './layout/DashboardLayout';
 import HomePage from './components/HomePage';
 import RaiseTicket from './components/RaiseTicket';
 import MyTicket from './components/MyTickets';
-import Settings from './components/Settings';
 import AuthPage1 from './components/AuthPage1';
 import Logout from './components/Logout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -35,7 +34,6 @@ const App = () => {
             <Route index element={<HomePage />} />
             <Route path="raise-ticket" element={<RaiseTicket />} />
             <Route path="my-tickets" element={<MyTicket />} />
-            <Route path="settings" element={<Settings />} />
             <Route path="profile" element={<Profile />} />
             <Route path="change-password" element={<ChangePassword />} />
           </Route>
