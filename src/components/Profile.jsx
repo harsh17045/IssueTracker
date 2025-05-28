@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Building2, Phone, Loader2, Briefcase, Building, LayoutGrid, Edit2, Check, X } from 'lucide-react';
+import { User, Mail, Building2, Phone, Loader2, Briefcase, Building, LayoutGrid, Edit2, Check, X, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { getProfile, updateProfile } from '../services/authService';
@@ -11,6 +11,10 @@ const Profile = () => {
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState({});
+  
+  // Replace the buildings and departments states with static data
+  const buildings = ["Academic", "Management", "Research"];
+  const departments = ["HR", "Admin", "Finance", "Marketing", "IT"];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -77,34 +81,65 @@ const Profile = () => {
 
   const renderField = (label, value, icon, field) => {
     const Icon = icon;
+    const isDropdown = field === 'building' || field === 'department';
+    
     return (
       <div>
         <label className="block text-sm font-medium text-gray-500 mb-2">{label}</label>
         {isEditing ? (
           <div className="relative">
             <Icon className="absolute top-3 left-3 text-gray-400" size={20} />
-            <input
-              type={field === 'floor' || field === 'lab_no' ? 'number' : 'text'}
-              value={editedData[field] || ''}
-              onChange={(e) => {
-                const newValue = e.target.value;
-                // Allow direct input manipulation
-                setEditedData(prev => ({
-                  ...prev,
-                  [field]: newValue === '' ? '' : validateAndConvertField(field, newValue)
-                }));
-              }}
-              onBlur={(e) => {
-                // Validate on blur to ensure final value meets requirements
-                const validatedValue = validateAndConvertField(field, e.target.value);
-                setEditedData(prev => ({
-                  ...prev,
-                  [field]: validatedValue === '' ? (field === 'lab_no' ? 1 : 0) : validatedValue
-                }));
-              }}
-              min={field === 'lab_no' ? 1 : 0}
-              className="pl-10 w-full py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4B2D87] focus:border-transparent"
-            />
+            {isDropdown ? (
+              <div className="relative">
+                <select
+                  value={editedData[field] || ''}
+                  onChange={(e) => {
+                    setEditedData(prev => ({
+                      ...prev,
+                      [field]: e.target.value
+                    }));
+                  }}
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg appearance-none bg-white focus:ring-2 focus:ring-[#4B2D87] focus:border-transparent"
+                >
+                  <option value="">Select {label}</option>
+                  {field === 'building' && buildings.map(building => (
+                    <option key={building} value={building}>
+                      {building}
+                    </option>
+                  ))}
+                  {field === 'department' && departments.map(dept => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown 
+                  size={20} 
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" 
+                />
+              </div>
+            ) : (
+              <input
+                type={field === 'floor' || field === 'lab_no' ? 'number' : 'text'}
+                value={editedData[field] || ''}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  setEditedData(prev => ({
+                    ...prev,
+                    [field]: newValue === '' ? '' : validateAndConvertField(field, newValue)
+                  }));
+                }}
+                onBlur={(e) => {
+                  const validatedValue = validateAndConvertField(field, e.target.value);
+                  setEditedData(prev => ({
+                    ...prev,
+                    [field]: validatedValue === '' ? (field === 'lab_no' ? 1 : 0) : validatedValue
+                  }));
+                }}
+                min={field === 'lab_no' ? 1 : 0}
+                className="pl-10 w-full py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4B2D87] focus:border-transparent"
+              />
+            )}
           </div>
         ) : (
           <div className="flex items-center bg-gray-50 rounded-lg p-3 border border-gray-200">

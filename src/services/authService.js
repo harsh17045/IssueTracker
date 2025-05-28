@@ -150,9 +150,7 @@ export const updateProfile = async (profileData) => {
 
 export const changePassword = async (passwordData) => {
   try {
-    console.log("Password data in authService:", passwordData);
     const token = localStorage.getItem("token");
-    console.log("Token in authService:", token);
     const response = await fetch(`${API_URL}/change-password`, {
       method: "POST",
       headers: {
@@ -170,6 +168,54 @@ export const changePassword = async (passwordData) => {
     return data;
   } catch (error) {
     console.error("Error changing password:", error);
+    throw error;
+  }
+};
+
+export const requestPasswordResetOtp = async (email) => {
+  try {
+    const response = await fetch(`${API_URL}/forgot-pass-request`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to send reset OTP');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Request password reset error:', error);
+    throw error;
+  }
+};
+
+export const resetPassword = async (email, otp, newPassword) => {
+  try {
+    const response = await fetch(`${API_URL}/verify-forgot-pass-otp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: email,
+        otp: otp,
+        newPassword: newPassword
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to reset password');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Reset password error:', error);
     throw error;
   }
 };
