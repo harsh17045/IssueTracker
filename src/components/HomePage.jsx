@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle, Clock, Bug } from 'lucide-react';
 import { getMyTickets } from '../services/authService';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const StatsCard = ({ title, value, icon, color }) => {
   return (
@@ -19,33 +20,46 @@ const StatsCard = ({ title, value, icon, color }) => {
 };
 
 const TicketCard = ({ ticket, index }) => {
+  const navigate = useNavigate();
   const statusColors = {
     'open': 'bg-blue-100 text-blue-800',
-    'in_progress': 'bg-purple-100 text-purple-800',
+    'assigned': 'bg-purple-100 text-purple-800',
     'resolved': 'bg-green-100 text-green-800',
     'closed': 'bg-gray-100 text-gray-800',
   };
 
+  const handleTicketClick = () => {
+    navigate('/my-tickets');
+  };
+
   return (
-    <div className="bg-white rounded-2xl border hover:shadow-md transition-shadow cursor-pointer">
+    <div 
+      className="bg-white rounded-lg border border-gray-200 hover:border-[#4B2D87] transition-colors overflow-hidden cursor-pointer"
+      onClick={handleTicketClick}
+    >
       <div className="flex items-center justify-between p-4">
-        <div className="flex items-center space-x-4">
-          <div>
-            <p className="text-sm font-medium text-gray-900">{index + 1}</p>
-            <p className="text-xs text-gray-500">
-              {format(new Date(ticket.createdAt), 'MMM dd, yyyy h:mm a')}
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-900">
+              {index + 1}. Issue Regarding {ticket.title}
             </p>
           </div>
-          <div>
+          <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-gray-900">
               {ticket.to_department?.name || 'Unknown Department'}
             </p>
-            <p className="text-xs text-gray-500">{ticket.title}</p>
           </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[ticket.status] || 'bg-gray-100 text-gray-800'}`}>
-          {ticket.status || 'Unknown'}
-        </span>
+        <div className="flex items-center space-x-4">
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+            statusColors[ticket.status] || 'bg-gray-100 text-gray-800'
+          }`}>
+            {ticket.status || 'Unknown'}
+          </span>
+          <p className="text-xs text-gray-500 min-w-[120px] text-right">
+            {format(new Date(ticket.createdAt), 'MMM dd, yyyy - h:mm a')}
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -55,11 +69,14 @@ const HomePage = () => {
   const [recentTickets, setRecentTickets] = useState([]);
   const [stats, setStats] = useState([
     { title: 'Open Tickets', value: '0', icon: AlertTriangle, color: 'bg-red-500' },
-    { title: 'In Progress', value: '0', icon: Clock, color: 'bg-blue-500' },
+    { title: 'Assigned', value: '0', icon: Clock, color: 'bg-blue-500' },
     { title: 'Resolved', value: '0', icon: CheckCircle, color: 'bg-green-500' },
     { title: 'Total Tickets', value: '0', icon: Bug, color: 'bg-purple-500' },
   ]);
   const [loading, setLoading] = useState(true);
+  // Add new state for filtering
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [filteredTickets, setFilteredTickets] = useState([]);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -69,14 +86,14 @@ const HomePage = () => {
         if (Array.isArray(fetchedTickets)) {
           // Calculate dynamic stats
           const openTickets = fetchedTickets.filter(ticket => ticket.status === 'open').length;
-          const inProgressTickets = fetchedTickets.filter(ticket => ticket.status === 'in_progress').length;
+          const inProgressTickets = fetchedTickets.filter(ticket => ticket.status === 'assigned').length;
           const resolvedTickets = fetchedTickets.filter(ticket => ticket.status === 'resolved').length;
           const totalTickets = fetchedTickets.length;
 
           // Update stats with dynamic values
           setStats([
             { title: 'Open Tickets', value: openTickets.toString(), icon: AlertTriangle, color: 'bg-red-500' },
-            { title: 'In Progress', value: inProgressTickets.toString(), icon: Clock, color: 'bg-blue-500' },
+            { title: 'Assigned', value: inProgressTickets.toString(), icon: Clock, color: 'bg-blue-500' },
             { title: 'Resolved', value: resolvedTickets.toString(), icon: CheckCircle, color: 'bg-green-500' },
             { title: 'Total Tickets', value: totalTickets.toString(), icon: Bug, color: 'bg-purple-500' },
           ]);
@@ -90,7 +107,7 @@ const HomePage = () => {
           setRecentTickets([]);
           setStats([
             { title: 'Open Tickets', value: '0', icon: AlertTriangle, color: 'bg-red-500' },
-            { title: 'In Progress', value: '0', icon: Clock, color: 'bg-blue-500' },
+            { title: 'Assigned', value: '0', icon: Clock, color: 'bg-blue-500' },
             { title: 'Resolved', value: '0', icon: CheckCircle, color: 'bg-green-500' },
             { title: 'Total Tickets', value: '0', icon: Bug, color: 'bg-purple-500' },
           ]);
@@ -106,6 +123,25 @@ const HomePage = () => {
 
     fetchTickets();
   }, []);
+
+  // Add filter function
+  useEffect(() => {
+    if (!recentTickets) return;
+
+    switch (activeFilter) {
+      case 'open':
+        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'open'));
+        break;
+      case 'assigned':
+        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'assigned'));
+        break;
+      case 'resolved':
+        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'closed'));
+        break;
+      default:
+        setFilteredTickets(recentTickets);
+    }
+  }, [activeFilter, recentTickets]);
 
   return (
     <div className="p-6 space-y-6 bg-gray-50">
@@ -129,13 +165,44 @@ const HomePage = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Recent Tickets</h3>
               <div className="flex space-x-2">
-                <button className="px-4 py-2 bg-[#4B2D87] text-white rounded-full hover:bg-[#5E3A9F] transition-colors">
+                <button 
+                  onClick={() => setActiveFilter('all')}
+                  className={`px-4 py-2 rounded-full transition-colors ${
+                    activeFilter === 'all' 
+                      ? 'bg-[#4B2D87] text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
                   All
                 </button>
-                <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors">
-                  Pending
+                <button 
+                  onClick={() => setActiveFilter('open')}
+                  className={`px-4 py-2 rounded-full transition-colors ${
+                    activeFilter === 'open' 
+                      ? 'bg-[#4B2D87] text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Open
                 </button>
-                <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors">
+                <button 
+                  onClick={() => setActiveFilter('assigned')}
+                  className={`px-4 py-2 rounded-full transition-colors ${
+                    activeFilter === 'assigned' 
+                      ? 'bg-[#4B2D87] text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Assigned
+                </button>
+                <button 
+                  onClick={() => setActiveFilter('resolved')}
+                  className={`px-4 py-2 rounded-full transition-colors ${
+                    activeFilter === 'resolved' 
+                      ? 'bg-[#4B2D87] text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
                   Resolved
                 </button>
               </div>
@@ -146,13 +213,15 @@ const HomePage = () => {
               <div className="text-center py-10">
                 <p className="text-gray-500">Loading recent tickets...</p>
               </div>
-            ) : recentTickets.length === 0 ? (
+            ) : filteredTickets.length === 0 ? (
               <div className="text-center py-10">
                 <Bug size={48} className="text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">No recent tickets found</p>
+                <p className="text-gray-500">
+                  No {activeFilter !== 'all' ? activeFilter : 'recent'} tickets found
+                </p>
               </div>
             ) : (
-              recentTickets.map((ticket, index) => (
+              filteredTickets.map((ticket, index) => (
                 <TicketCard key={ticket._id} ticket={ticket} index={index} />
               ))
             )}

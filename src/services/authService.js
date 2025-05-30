@@ -39,10 +39,17 @@ export const verifyUser = async (userData) => {
   const data = await response.json();
 
   if (data.token && data.employee) {
+    // Calculate midnight IST
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST offset from UTC (5 hours 30 minutes)
+    const utcMidnight = new Date(now);
+    utcMidnight.setHours(24, 0, 0, 0); // Set to next midnight UTC
+    const istMidnight = new Date(utcMidnight.getTime() + istOffset); // Convert to IST
+
     // Store token and employee data in localStorage
     localStorage.setItem("token", data.token);
     localStorage.setItem("employee", JSON.stringify(data.employee));
-    localStorage.setItem("tokenExpiry", Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    localStorage.setItem("tokenExpiry", istMidnight.getTime().toString());
   }
 
   return data;
@@ -89,10 +96,9 @@ export const getMyTickets = async () => {
         'Authorization': `Bearer ${token}`
       }
     });
-    console.log("Response : ", response);
-    const data = await response.json();
-    console.log('Tickets API Response:', data); // Debug log
 
+    const data = await response.json();
+    
     if (!response.ok) {
       throw new Error(data.message || 'Failed to fetch tickets');
     }

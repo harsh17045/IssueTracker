@@ -64,8 +64,10 @@ const LoginForm = ({ onRegisterClick }) => {
     setIsSubmitting(true);
     try {
       const res = await verifyUser({ email: formData.email, otp: formData.otp });
+      console.log("OTP verification response:", res);
       if (res.message === "Login Successfull") {
         setEmployee(res.employee);
+        toast.success('Successfully logged in!');
         navigate('/');
       } else {
         setErrors({ otp: res.message || 'Invalid OTP' });

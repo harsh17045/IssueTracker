@@ -9,6 +9,7 @@ import AuthPage1 from './components/AuthPage1';
 import Logout from './components/Logout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Profile from './components/Profile';
 import ChangePassword from './components/ChangePassword';
 
@@ -38,7 +39,18 @@ const App = () => {
             <Route path="change-password" element={<ChangePassword />} />
           </Route>
         </Routes>
-        <ToastContainer />
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
       </Router>
     </AuthProvider>
   );
