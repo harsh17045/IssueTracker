@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { getMyTickets } from "../services/authService";
+import { toast } from "react-toastify";
 
 const AuthContext = createContext();
 
@@ -8,6 +10,7 @@ export const AuthProvider = ({ children }) => {
     return stored ? JSON.parse(stored) : null;
   });
   const [alertMessage, setAlertMessage] = useState("");
+  const [tickets, setTickets] = useState([]);
 
   useEffect(() => {
     const storedEmployee = localStorage.getItem("employee");
@@ -25,7 +28,26 @@ export const AuthProvider = ({ children }) => {
         return () => clearTimeout(timeout);
       }
     }
+    // eslint-disable-next-line
   }, []);
+
+  useEffect(() => {
+    if (!employee) return; // Only fetch if authenticated
+
+    const fetchTickets = async () => {
+      try {
+        const fetchedTickets = await getMyTickets();
+        setTickets(fetchedTickets);
+      } catch (error) {
+        console.error("Error fetching tickets:", error);
+        if (employee) {
+          toast.error("Failed to fetch tickets");
+        }
+      }
+    };
+
+    fetchTickets();
+  }, [employee]);
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -33,13 +55,15 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("tokenExpiry");
     setEmployee(null);
     setAlertMessage("You have been logged out.");
+    setTickets([]);
   };
 
   return (
-    <AuthContext.Provider value={{ employee, setEmployee, alertMessage, setAlertMessage, logout }}>
+    <AuthContext.Provider value={{ employee, setEmployee, alertMessage, setAlertMessage, logout, tickets }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
+

@@ -145,26 +145,38 @@ export const getProfile = async () => {
   }
 };
 
-export const updateProfile = async (profileData) => {
+export const updateProfile = async (profileData, isMultipart = false) => {
   try {
-    console.log("Profile data in authService:", profileData);
-
     const token = localStorage.getItem("token");
-    const response = await fetch(`${API_URL}/update-profile`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(profileData),
-    });
-    console.log("Response status:", response.status);
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to update profile");
+    if (!token) {
+      throw new Error("No authentication token found");
     }
 
+    const options = {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    };
+
+    if (isMultipart) {
+      // Let browser set Content-Type for FormData
+      options.body = profileData;
+    } else {
+      options.headers["Content-Type"] = "application/json";
+      options.body = JSON.stringify(profileData);
+    }
+
+    const response = await fetch(`${API_URL}/update-profile`, options);
+
+    console.log("profile",profileData);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+
+    const data = await response.json();
     return data.employee;
   } catch (error) {
     console.error("Error updating profile:", error);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 import { User, Mail, Building2, Phone, Loader2, Briefcase, Building, LayoutGrid, Edit2, Check, X, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
@@ -11,8 +11,10 @@ const Profile = () => {
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState({});
-  
-  // Replace the buildings and departments states with static data
+  const [profileImage, setProfileImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+
+  // Static data
   const buildings = ["Academic", "Management", "Research"];
   const departments = ["HR", "Admin", "Finance", "Marketing", "IT"];
 
@@ -21,13 +23,14 @@ const Profile = () => {
       try {
         const data = await getProfile();
         setProfileData(data);
+        setEditedData(data);
+        setProfileImage(data?.profile_image || null); // Use profile_image from backend
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-
     fetchProfile();
   }, []);
 
@@ -37,32 +40,65 @@ const Profile = () => {
     }
   }, [profileData]);
 
-  const handleSave = async () => {
-    try {
-      console.log("Saving profile data:", editedData);
-      const updatedProfile = await updateProfile(editedData);
-      setProfileData(updatedProfile);
-      setIsEditing(false);
-      toast.success('Profile updated successfully');
-    } catch (err) {
-      toast.error(err.message);
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImage(URL.createObjectURL(file));
+      setImageFile(file); // Store file for upload
     }
   };
 
+  const handleSave = async () => {
+  try {
+    const formData = new FormData();
+
+    // Always send all fields, using editedData if present, else profileData
+    formData.append('name', editedData.name ?? profileData.name ?? '');
+    formData.append('contact_no', editedData.contact_no ?? profileData.contact_no ?? '');
+    formData.append('building', editedData.building ?? profileData.building ?? '');
+    formData.append('department', editedData.department ?? profileData.department ?? '');
+    formData.append('floor', 
+      (editedData.floor !== undefined && editedData.floor !== null && editedData.floor !== '') 
+        ? editedData.floor.toString() 
+        : (profileData.floor ?? 0).toString()
+    );
+    formData.append('lab_no', 
+      (editedData.lab_no !== undefined && editedData.lab_no !== null && editedData.lab_no !== '') 
+        ? editedData.lab_no.toString() 
+        : (profileData.lab_no ?? 1).toString()
+    );
+
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+    
+    const updatedProfile = await updateProfile(formData, true);
+    
+    setProfileData(updatedProfile);
+    setProfileImage(updatedProfile?.profile_image || null);
+    setIsEditing(false);
+    setImageFile(null);
+    toast.success('Profile updated successfully');
+  } catch (err) {
+    console.error('Update error:', err);
+    toast.error(err.message || 'Failed to update profile');
+  }
+};
+
   const handleCancel = () => {
     setEditedData(profileData);
+    setProfileImage(profileData?.profile_image || null);
     setIsEditing(false);
+    setImageFile(null);
   };
 
   const validateAndConvertField = (field, value) => {
     switch (field) {
       case 'lab_no': {
-        // Allow empty string for backspacing
         if (value === '') return '';
         const num = parseInt(value);
-        // Only validate if it's a valid number
         if (!isNaN(num)) {
-          return Math.max(1, num); // Minimum value of 1
+          return Math.max(1, num);
         }
         return '';
       }
@@ -70,7 +106,7 @@ const Profile = () => {
         if (value === '') return '';
         const num = parseInt(value);
         if (!isNaN(num)) {
-          return Math.max(0, num); // Minimum value of 0
+          return Math.max(0, num);
         }
         return '';
       }
@@ -82,7 +118,7 @@ const Profile = () => {
   const renderField = (label, value, icon, field) => {
     const Icon = icon;
     const isDropdown = field === 'building' || field === 'department';
-    
+
     return (
       <div>
         <label className="block text-sm font-medium text-gray-500 mb-2">{label}</label>
@@ -210,8 +246,28 @@ const Profile = () => {
           </div>
 
           <div className="flex flex-col items-center">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4">
-              <User size={40} className="text-[#4B2D87]" />
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4 relative overflow-hidden group">
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  className="w-full h-full object-cover rounded-full"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <User size={40} className="text-[#4B2D87]" />
+              )}
+              {isEditing && (
+                <label className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                  <span className="text-white text-xs">Change</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
             <h1 className="text-2xl font-bold text-white">{profileData?.name || 'Loading...'}</h1>
             <p className="text-gray-300 mt-1">{profileData?.email || 'Loading...'}</p>
