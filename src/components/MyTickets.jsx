@@ -1,6 +1,6 @@
-import { Bug, Edit2, X, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bug, Edit2, X, Check, ChevronDown, ChevronUp, CalendarIcon, Filter } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getMyTickets, updateTicket, getAllDepartments } from '../services/authService';
+import { getMyTickets, updateTicket, getAllDepartments, revokeTicket, filterTickets } from '../services/authService';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 
@@ -15,22 +15,37 @@ const MyTickets = () => {
   });
   const [expandedTicket, setExpandedTicket] = useState(null);
   const [departments, setDepartments] = useState([]);
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [filteredTickets, setFilteredTickets] = useState([]);
+  const [filterParams, setFilterParams] = useState({
+    status: '',
+    to_department: '',
+    startDate: '',
+    endDate: ''
+  });
+  const [isFilterOpen, setIsFilterOpen] = useState(false); // <-- Added state for filter
+
+  const statusOptions = [
+    { value: '', label: 'All Status' },
+    { value: 'open', label: 'Open' },
+    { value: 'assigned', label: 'Assigned' },
+    { value: 'resolved', label: 'Resolved' },
+    { value: 'closed', label: 'Closed' },
+    { value: 'revoked', label: 'Revoked' }
+  ];
+
+  // Move fetchTickets to component scope so it can be called elsewhere
+  const fetchTickets = async () => {
+    try {
+      const fetchedTickets = await getMyTickets();
+      setTickets(fetchedTickets);
+    } catch (error) {
+      toast.error('Failed to fetch tickets');
+      console.error('Error fetching tickets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchTickets = async () => {
-      try {
-        const fetchedTickets = await getMyTickets();
-        setTickets(fetchedTickets);
-      } catch (error) {
-        toast.error('Failed to fetch tickets');
-        console.error('Error fetching tickets:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTickets();
   }, []);
 
@@ -59,27 +74,6 @@ const MyTickets = () => {
 
     fetchDepartments();
   }, []);
-
-  useEffect(() => {
-    if (!tickets.length) {
-      setFilteredTickets([]);
-      return;
-    }
-
-    switch (activeFilter) {
-      case 'open':
-        setFilteredTickets(tickets.filter(ticket => ticket.status === 'open'));
-        break;
-      case 'assigned':
-        setFilteredTickets(tickets.filter(ticket => ticket.status === 'assigned'));
-        break;
-      case 'resolved':
-        setFilteredTickets(tickets.filter(ticket => ticket.status === 'resolved'));
-        break;
-      default:
-        setFilteredTickets(tickets);
-    }
-  }, [activeFilter, tickets]);
 
   const handleEditClick = (ticket) => {
     setEditingTicket(ticket);
@@ -135,11 +129,44 @@ const MyTickets = () => {
     setExpandedTicket(expandedTicket === ticketId ? null : ticketId);
   };
 
+  const handleRevokeTicket = async (ticketId) => {
+    try {
+      await revokeTicket(ticketId);
+      
+      // Update the tickets list to reflect the revoked status
+      const updatedTickets = tickets.map(ticket => 
+        ticket._id === ticketId 
+          ? { ...ticket, status: 'revoked' }
+          : ticket
+      );
+      
+      setTickets(updatedTickets);
+      toast.success('Ticket revoked successfully');
+    } catch (error) {
+      toast.error(error.message || 'Failed to revoke ticket');
+      console.error('Revoke error:', error);
+    }
+  };
+
+  const handleFilter = async () => {
+    try {
+      setLoading(true);
+      const filteredResults = await filterTickets(filterParams);
+      setTickets(filteredResults);
+    } catch (error) {
+      toast.error('Failed to filter tickets');
+      console.error('Filter error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const statusColors = {
     'open': 'bg-blue-100 text-blue-800',
-    'in_progress': 'bg-purple-100 text-purple-800',
+    'assigned': 'bg-purple-100 text-purple-800',
     'resolved': 'bg-green-100 text-green-800',
     'closed': 'bg-gray-100 text-gray-800',
+    'revoked': 'bg-yellow-100 text-yellow-800',
   };
 
   const getDepartmentName = (deptId) => {
@@ -168,37 +195,119 @@ const MyTickets = () => {
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Your Tickets</h3>
-            <div className="flex space-x-2">
-              <button 
-                onClick={() => setActiveFilter('all')}
-                className={`px-4 py-2 rounded-full transition-colors ${
-                  activeFilter === 'all' 
-                    ? 'bg-[#4B2D87] text-white' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            
+            <div className="relative">
+              <button
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={`px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+                  isFilterOpen || Object.values(filterParams).some(value => value !== '')
+                    ? 'bg-[#4B2D87] text-white border-[#4B2D87]'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                All
+                <Filter size={16} />
+                <span>Filter</span>
+                {Object.values(filterParams).some(value => value !== '') && (
+                  <span className="ml-1 w-2 h-2 rounded-full bg-white" />
+                )}
               </button>
-              <button 
-                onClick={() => setActiveFilter('open')}
-                className={`px-4 py-2 rounded-full transition-colors ${
-                  activeFilter === 'open' 
-                    ? 'bg-[#4B2D87] text-white' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Open
-              </button>
-              <button 
-                onClick={() => setActiveFilter('assigned')}
-                className={`px-4 py-2 rounded-full transition-colors ${
-                  activeFilter === 'assigned' 
-                    ? 'bg-[#4B2D87] text-white' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Assigned
-              </button>
+
+              {/* Dropdown Filter Panel */}
+              {isFilterOpen && (
+                <div className="absolute right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-4 z-10 w-[600px]">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Status
+                        </label>
+                        <select
+                          value={filterParams.status}
+                          onChange={(e) => setFilterParams(prev => ({ ...prev, status: e.target.value }))}
+                          className="w-full text-sm px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4B2D87]"
+                        >
+                          {statusOptions.map((status) => (
+                            <option key={status.value} value={status.value}>
+                              {status.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Department
+                        </label>
+                        <select
+                          value={filterParams.to_department}
+                          onChange={(e) => setFilterParams(prev => ({ ...prev, to_department: e.target.value }))}
+                          className="w-full text-sm px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4B2D87]"
+                        >
+                          <option value="">All Departments</option>
+                          {departments.map((dept) => (
+                            <option key={dept._id} value={dept.name}>
+                              {dept.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          value={filterParams.startDate}
+                          onChange={(e) => setFilterParams(prev => ({ ...prev, startDate: e.target.value }))}
+                          className="w-full text-sm px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4B2D87]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          value={filterParams.endDate}
+                          onChange={(e) => setFilterParams(prev => ({ ...prev, endDate: e.target.value }))}
+                          className="w-full text-sm px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4B2D87]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t">
+                      <button
+                        onClick={() => {
+                          setFilterParams({
+                            status: '',
+                            to_department: '',
+                            startDate: '',
+                            endDate: ''
+                          });
+                          fetchTickets();
+                          setIsFilterOpen(false);
+                        }}
+                        className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-50"
+                      >
+                        Clear
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleFilter();
+                          setIsFilterOpen(false);
+                        }}
+                        className="px-4 py-2 text-sm bg-[#4B2D87] text-white rounded-lg hover:bg-[#3D2276] transition-colors"
+                      >
+                        Apply Filters
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -207,15 +316,12 @@ const MyTickets = () => {
             <div className="text-center py-10">
               <p className="text-gray-500">Loading tickets...</p>
             </div>
-          ) : filteredTickets.length === 0 ? (
+          ) : tickets.length === 0 ? (
             <div className="text-center py-10">
-              <Bug size={48} className="text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500">
-                No {activeFilter !== 'all' ? activeFilter : ''} tickets found
-              </p>
+              <p className="text-gray-500">No tickets found matching your filters</p>
             </div>
           ) : (
-            filteredTickets.map((ticket, index) => (
+            tickets.map((ticket, index) => (
               <div 
                 key={ticket._id} 
                 className="bg-white rounded-lg border border-gray-200 hover:border-[#4B2D87] transition-colors overflow-hidden"
@@ -282,6 +388,17 @@ const MyTickets = () => {
                     </div>
                   </div>
                   <div className="flex items-count space-x-4">
+                    {ticket.status === 'open' && !editingTicket && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRevokeTicket(ticket._id);
+                        }}
+                        className="px-3 py-1 text-xs font-medium text-red-600 bg-red-100 rounded-full hover:bg-red-200 transition-colors"
+                      >
+                        Revoke
+                      </button>
+                    )}
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                       statusColors[ticket.status] || 'bg-gray-100 text-gray-800'
                     }`}>

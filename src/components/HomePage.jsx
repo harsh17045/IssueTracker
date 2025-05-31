@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, CheckCircle, Clock, Bug } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, Bug, XCircle, Lock } from 'lucide-react';
 import { getMyTickets } from '../services/authService';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
@@ -7,10 +7,10 @@ import { useNavigate } from 'react-router-dom';
 
 const StatsCard = ({ title, value, icon, color }) => {
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border flex items-center justify-between">
+    <div className="bg-white p-6 rounded-xl shadow-sm border flex items-center justify-between">
       <div>
         <p className="text-sm font-medium text-gray-600">{title}</p>
-        <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
+        <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
       </div>
       <div className={`p-3 rounded-full ${color}`}>
         {icon && React.createElement(icon, { size: 24, className: "text-white" })}
@@ -19,6 +19,7 @@ const StatsCard = ({ title, value, icon, color }) => {
   );
 };
 
+// Update the TicketCard component to be more compact
 const TicketCard = ({ ticket, index }) => {
   const navigate = useNavigate();
   const statusColors = {
@@ -26,6 +27,7 @@ const TicketCard = ({ ticket, index }) => {
     'assigned': 'bg-purple-100 text-purple-800',
     'resolved': 'bg-green-100 text-green-800',
     'closed': 'bg-gray-100 text-gray-800',
+    'revoked': 'bg-yellow-100 text-yellow-800',
   };
 
   const handleTicketClick = () => {
@@ -34,30 +36,28 @@ const TicketCard = ({ ticket, index }) => {
 
   return (
     <div 
-      className="bg-white rounded-lg border border-gray-200 hover:border-[#4B2D87] transition-colors overflow-hidden cursor-pointer"
+      className="bg-white rounded-lg border border-gray-200 hover:border-[#4B2D87] transition-colors overflow-hidden cursor-pointer flex-1 min-w-0"
       onClick={handleTicketClick}
     >
-      <div className="flex items-center justify-between p-4">
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-900">
-              {index + 1}. Issue Regarding {ticket.title}
+      <div className="p-4">
+        <div className="flex flex-col h-full">
+          <div className="mb-2">
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {index + 1}. {ticket.title}
             </p>
           </div>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-900">
+          <div className="flex items-center justify-between mt-auto">
+            <p className="text-xs font-medium text-gray-600 truncate">
               {ticket.to_department?.name || 'Unknown Department'}
             </p>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              statusColors[ticket.status] || 'bg-gray-100 text-gray-800'
+            }`}>
+              {ticket.status || 'Unknown'}
+            </span>
           </div>
-        </div>
-        <div className="flex items-center space-x-4">
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-            statusColors[ticket.status] || 'bg-gray-100 text-gray-800'
-          }`}>
-            {ticket.status || 'Unknown'}
-          </span>
-          <p className="text-xs text-gray-500 min-w-[120px] text-right">
-            {format(new Date(ticket.createdAt), 'MMM dd, yyyy - h:mm a')}
+          <p className="text-xs text-gray-500 mt-2">
+            {format(new Date(ticket.createdAt), 'MMM dd, yyyy')}
           </p>
         </div>
       </div>
@@ -71,6 +71,8 @@ const HomePage = () => {
     { title: 'Open Tickets', value: '0', icon: AlertTriangle, color: 'bg-red-500' },
     { title: 'Assigned', value: '0', icon: Clock, color: 'bg-blue-500' },
     { title: 'Resolved', value: '0', icon: CheckCircle, color: 'bg-green-500' },
+    { title: 'Closed', value: '0', icon: Lock, color: 'bg-gray-500' },
+    { title: 'Revoked', value: '0', icon: XCircle, color: 'bg-yellow-500' },
     { title: 'Total Tickets', value: '0', icon: Bug, color: 'bg-purple-500' },
   ]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +90,8 @@ const HomePage = () => {
           const openTickets = fetchedTickets.filter(ticket => ticket.status === 'open').length;
           const inProgressTickets = fetchedTickets.filter(ticket => ticket.status === 'assigned').length;
           const resolvedTickets = fetchedTickets.filter(ticket => ticket.status === 'resolved').length;
+          const closedTickets = fetchedTickets.filter(ticket => ticket.status === 'closed').length;
+          const revokedTickets = fetchedTickets.filter(ticket => ticket.status === 'revoked').length;
           const totalTickets = fetchedTickets.length;
 
           // Update stats with dynamic values
@@ -95,6 +99,8 @@ const HomePage = () => {
             { title: 'Open Tickets', value: openTickets.toString(), icon: AlertTriangle, color: 'bg-red-500' },
             { title: 'Assigned', value: inProgressTickets.toString(), icon: Clock, color: 'bg-blue-500' },
             { title: 'Resolved', value: resolvedTickets.toString(), icon: CheckCircle, color: 'bg-green-500' },
+            { title: 'Closed', value: closedTickets.toString(), icon: Lock, color: 'bg-gray-500' },
+            { title: 'Revoked', value: revokedTickets.toString(), icon: XCircle, color: 'bg-yellow-500' },
             { title: 'Total Tickets', value: totalTickets.toString(), icon: Bug, color: 'bg-purple-500' },
           ]);
 
@@ -109,6 +115,8 @@ const HomePage = () => {
             { title: 'Open Tickets', value: '0', icon: AlertTriangle, color: 'bg-red-500' },
             { title: 'Assigned', value: '0', icon: Clock, color: 'bg-blue-500' },
             { title: 'Resolved', value: '0', icon: CheckCircle, color: 'bg-green-500' },
+            { title: 'Closed', value: '0', icon: Lock, color: 'bg-gray-500' },
+            { title: 'Revoked', value: '0', icon: XCircle, color: 'bg-yellow-500' },
             { title: 'Total Tickets', value: '0', icon: Bug, color: 'bg-purple-500' },
           ]);
           toast.error('Invalid ticket data received');
@@ -136,7 +144,13 @@ const HomePage = () => {
         setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'assigned'));
         break;
       case 'resolved':
+        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'resolved'));
+        break;
+      case 'closed':
         setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'closed'));
+        break;
+      case 'revoked':
+        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'revoked'));
         break;
       default:
         setFilteredTickets(recentTickets);
@@ -152,7 +166,7 @@ const HomePage = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {stats.map((stat, index) => (
           <StatsCard key={index} {...stat} />
         ))}
@@ -205,10 +219,30 @@ const HomePage = () => {
                 >
                   Resolved
                 </button>
+                <button 
+                  onClick={() => setActiveFilter('closed')}
+                  className={`px-4 py-2 rounded-full transition-colors ${
+                    activeFilter === 'closed' 
+                      ? 'bg-[#4B2D87] text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Closed
+                </button>
+                <button 
+                  onClick={() => setActiveFilter('revoked')}
+                  className={`px-4 py-2 rounded-full transition-colors ${
+                    activeFilter === 'revoked' 
+                      ? 'bg-[#4B2D87] text-white' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Revoked
+                </button>
               </div>
             </div>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-6">
             {loading ? (
               <div className="text-center py-10">
                 <p className="text-gray-500">Loading recent tickets...</p>
@@ -221,9 +255,11 @@ const HomePage = () => {
                 </p>
               </div>
             ) : (
-              filteredTickets.map((ticket, index) => (
-                <TicketCard key={ticket._id} ticket={ticket} index={index} />
-              ))
+              <div className="flex gap-4">
+                {filteredTickets.map((ticket, index) => (
+                  <TicketCard key={ticket._id} ticket={ticket} index={index} />
+                ))}
+              </div>
             )}
           </div>
         </div>

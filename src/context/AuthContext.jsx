@@ -55,6 +55,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("tokenExpiry");
     setEmployee(null);
     setAlertMessage("You have been logged out.");
+    toast("Logged out successfully", {
+      type: "success",
+      autoClose: 3000,
+    });
     setTickets([]);
   };
 

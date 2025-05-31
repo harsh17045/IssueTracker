@@ -322,3 +322,64 @@ export const getAllDepartments = async () => {
     throw error;
   }
 };
+
+export const revokeTicket = async (ticketId) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
+    const response = await fetch(`${API_URL}/revoke-ticket/${ticketId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      }
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to revoke ticket");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error revoking ticket:", error);
+    throw error;
+  }
+};
+
+export const filterTickets = async (filters) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    // Build query string from filters
+    const queryParams = new URLSearchParams();
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.to_department) queryParams.append('to_department', filters.to_department);
+    if (filters.startDate) queryParams.append('startDate', filters.startDate);
+    if (filters.endDate) queryParams.append('endDate', filters.endDate);
+
+    const response = await fetch(`${API_URL}/filter-tickets?${queryParams}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch filtered tickets');
+    }
+
+    return data.tickets;
+  } catch (error) {
+    console.error('Error filtering tickets:', error);
+    throw error;
+  }
+};

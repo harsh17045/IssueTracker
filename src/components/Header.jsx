@@ -1,15 +1,31 @@
 import { Menu, Search, Filter, Bell, User, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { getProfile } from '../services/authService';
 
 const Header = ({ onMenuClick }) => {
   const { employee } = useAuth();
   const navigate = useNavigate();
+  const [profileImage, setProfileImage] = useState(null);
+
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const profileData = await getProfile();
+        setProfileImage(profileData?.profile_image || null);
+      } catch (error) {
+        console.error('Error fetching profile image:', error);
+      }
+    };
+
+    fetchProfileImage();
+  }, []);
 
   const handleProfileClick = () => {
     navigate('/profile');
   };
-  
+
   return (
     <header className="bg-white shadow-sm border-b px-6 py-4">
       <div className="flex items-center justify-between">
@@ -43,8 +59,18 @@ const Header = ({ onMenuClick }) => {
             onClick={handleProfileClick}
             className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors"
           >
-            <div className="w-8 h-8 bg-[#4B2D87] rounded-full flex items-center justify-center">
-              <User size={18} className="text-white" />
+            
+            <div className="w-8 h-8 bg-[#4B2D87] rounded-full flex items-center justify-center overflow-hidden">
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  className="w-full h-full object-cover rounded-full"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <User size={18} className="text-white" />
+              )}
             </div>
             <span className="text-sm font-medium text-gray-700">
               {employee?.name || 'User'}

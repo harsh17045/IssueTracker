@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { getProfile, updateProfile } from '../services/authService';
 
 const Profile = () => {
-  const { employee } = useAuth();
+  const { employee, setEmployee } = useAuth();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,7 +14,6 @@ const Profile = () => {
   const [profileImage, setProfileImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
 
-  // Static data
   const buildings = ["Academic", "Management", "Research"];
   const departments = ["HR", "Admin", "Finance", "Marketing", "IT"];
 
@@ -76,6 +75,7 @@ const Profile = () => {
     
     setProfileData(updatedProfile);
     setProfileImage(updatedProfile?.profile_image || null);
+    setEmployee(updatedProfile); // <-- This line is critical!
     setIsEditing(false);
     setImageFile(null);
     toast.success('Profile updated successfully');
