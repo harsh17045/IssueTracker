@@ -1,4 +1,4 @@
-import { Bug, Edit2, X, Check, ChevronDown, ChevronUp, CalendarIcon, Filter } from 'lucide-react';
+import { Bug, Edit2, X, Check, ChevronDown, ChevronUp, CalendarIcon, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getMyTickets, updateTicket, getAllDepartments, revokeTicket, filterTickets } from '../services/authService';
 import { toast } from 'react-toastify';
@@ -21,22 +21,23 @@ const MyTickets = () => {
     startDate: '',
     endDate: ''
   });
-  const [isFilterOpen, setIsFilterOpen] = useState(false); // <-- Added state for filter
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1); // State for current page
+  const ticketsPerPage = 5; // Maximum 5 tickets per page
 
   const statusOptions = [
     { value: '', label: 'All Status' },
-    { value: 'open', label: 'Open' },
-    { value: 'assigned', label: 'Assigned' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'in_progress', label: 'In Progress' },
     { value: 'resolved', label: 'Resolved' },
-    { value: 'closed', label: 'Closed' },
     { value: 'revoked', label: 'Revoked' }
   ];
 
-  // Move fetchTickets to component scope so it can be called elsewhere
   const fetchTickets = async () => {
     try {
       const fetchedTickets = await getMyTickets();
       setTickets(fetchedTickets);
+      setCurrentPage(1); // Reset to first page on new fetch
     } catch (error) {
       toast.error('Failed to fetch tickets');
       console.error('Error fetching tickets:', error);
@@ -80,7 +81,7 @@ const MyTickets = () => {
     setEditedData({
       title: ticket.title,
       description: ticket.description || '',
-      to_department: ticket.to_department?.name || '' // Changed to use name instead of id
+      to_department: ticket.to_department?.name || ''
     });
   };
 
@@ -93,17 +94,15 @@ const MyTickets = () => {
 
       const updatedTicket = await updateTicket(ticketId, editedData);
       
-      // Find the department details from departments array using name
       const department = departments.find(dept => dept.name === editedData.to_department);
       
-      // Update the tickets array with the correct department structure
       const updatedTickets = tickets.map(ticket => {
         if (ticket._id === ticketId) {
           return {
             ...updatedTicket,
             to_department: {
-              id: department ? (department.id || department._id) : null, // Use id or _id
-              name: editedData.to_department // Use the name directly from editedData
+              id: department ? (department.id || department._id) : null,
+              name: editedData.to_department
             }
           };
         }
@@ -133,7 +132,6 @@ const MyTickets = () => {
     try {
       await revokeTicket(ticketId);
       
-      // Update the tickets list to reflect the revoked status
       const updatedTickets = tickets.map(ticket => 
         ticket._id === ticketId 
           ? { ...ticket, status: 'revoked' }
@@ -153,6 +151,7 @@ const MyTickets = () => {
       setLoading(true);
       const filteredResults = await filterTickets(filterParams);
       setTickets(filteredResults);
+      setCurrentPage(1); // Reset to first page after filtering
     } catch (error) {
       toast.error('Failed to filter tickets');
       console.error('Filter error:', error);
@@ -162,16 +161,27 @@ const MyTickets = () => {
   };
 
   const statusColors = {
-    'open': 'bg-blue-100 text-blue-800',
-    'assigned': 'bg-purple-100 text-purple-800',
+    'pending': 'bg-blue-100 text-blue-800',
+    'in_progress': 'bg-purple-100 text-purple-800',
     'resolved': 'bg-green-100 text-green-800',
-    'closed': 'bg-gray-100 text-gray-800',
-    'revoked': 'bg-yellow-100 text-yellow-800',
+    'revoked': 'bg-yellow-100 text-yellow-800'
   };
 
   const getDepartmentName = (deptId) => {
     const department = departments.find(dept => dept._id === deptId || dept.id === deptId);
     return department?.name || 'Unknown Department';
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil(tickets.length / ticketsPerPage);
+  const startIndex = (currentPage - 1) * ticketsPerPage;
+  const endIndex = startIndex + ticketsPerPage;
+  const currentTickets = tickets.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
   };
 
   if (loading) {
@@ -316,12 +326,12 @@ const MyTickets = () => {
             <div className="text-center py-10">
               <p className="text-gray-500">Loading tickets...</p>
             </div>
-          ) : tickets.length === 0 ? (
+          ) : currentTickets.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-gray-500">No tickets found matching your filters</p>
             </div>
           ) : (
-            tickets.map((ticket, index) => (
+            currentTickets.map((ticket, index) => (
               <div 
                 key={ticket._id} 
                 className="bg-white rounded-lg border border-gray-200 hover:border-[#4B2D87] transition-colors overflow-hidden"
@@ -332,7 +342,7 @@ const MyTickets = () => {
                 >
                   <div className="flex items-center space-x-4 flex-1">
                     <div className="flex items-center space-x-2">
-                      <p className="text-sm font-medium text-gray-900">{index + 1}.</p>
+                      <p className="text-sm font-medium text-gray-900">{startIndex + index + 1}.</p>
                       {!editingTicket && (
                         expandedTicket === ticket._id ? (
                           <ChevronUp size={16} className="text-gray-400" />
@@ -387,8 +397,8 @@ const MyTickets = () => {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-count space-x-4">
-                    {ticket.status === 'open' && !editingTicket && (
+                  <div className="flex items-center space-x-4">
+                    {ticket.status === 'pending' && !editingTicket && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -447,11 +457,13 @@ const MyTickets = () => {
                             className="w-full text-xs px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4B2D87] focus:border-transparent appearance-none"
                           >
                             <option value="">Select a department</option>
-                            {departments.map((dept) => (
-                              <option key={dept.id} value={dept.name}>
-                                {dept.name}
-                              </option>
-                            ))}
+                            {departments
+                              .filter(dept => dept.canResolve)
+                              .map((dept) => (
+                                <option key={dept._id || dept.id} value={dept.name}>
+                                  {dept.name}
+                                </option>
+                              ))}
                           </select>
                           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                             <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -465,6 +477,50 @@ const MyTickets = () => {
             ))
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {tickets.length > 0 && (
+          <div className="p-6 border-t border-gray-200 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Showing {startIndex + 1} to {Math.min(endIndex, tickets.length)} of {tickets.length} tickets
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 ${
+                  currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <div className="flex space-x-1">
+                {Array.from({ length: totalPages }, (_, index) => (
+                  <button
+                    key={index + 1}
+                    onClick={() => handlePageChange(index + 1)}
+                    className={`px-3 py-1 rounded-lg text-sm ${
+                      currentPage === index + 1
+                        ? 'bg-[#4B2D87] text-white'
+                        : 'text-gray-600 hover:bg-gray-100 border border-gray-300'
+                    }`}
+                  >
+                    {index + 1}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 ${
+                  currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

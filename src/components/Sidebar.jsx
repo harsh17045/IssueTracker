@@ -9,24 +9,28 @@ import {
   X,
   ChevronDown,
   User,
-  Lock // Add Lock to imports
+  Lock
 } from 'lucide-react';
 
-const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
-  const navigate = useNavigate(); // Add this back
+const Sidebar = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
   const location = useLocation();
   const [activeItem, setActiveItem] = useState('dashboard');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef(null);
 
   const { employee } = useAuth();
-  // Sync active item with current route
+
+  useEffect(() => {
+    console.log("Sidebar employee data:", employee);
+    console.log("Sidebar department data:", employee?.department);
+  }, [employee]);
+
   useEffect(() => {
     const path = location.pathname.split('/')[1] || 'dashboard';
     setActiveItem(path);
   }, [location.pathname]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
@@ -38,7 +42,6 @@ const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Handle profile click
   const handleProfileClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -46,24 +49,16 @@ const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
   };
 
   const handleLogoutClick = () => {
-    navigate('/logout'); // Navigate to logout page instead of handling logout directly
+    navigate('/logout');
   };
 
-  // Update the menu items array
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/' },
     { id: 'raiseTicket', label: 'Raise Ticket', icon: FileText, path: '/raise-ticket' },
     { id: 'myTickets', label: 'My Tickets', icon: Bug, path: '/my-tickets' },
     { 
       id: 'profile', 
-      label: (
-        <div className="flex flex-col">
-          <span>{employee?.name || 'Profile'}</span>
-          <span className="text-sm text-gray-300">
-            {employee?.department ? `Department - ${employee.department}` : ''}
-          </span>
-        </div>
-      ),
+      label: 'Profile',
       icon: User,
       hasSubmenu: true,
       submenu: [
@@ -75,7 +70,6 @@ const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
 
   return (
     <>
-      {/* Mobile backdrop */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -83,12 +77,10 @@ const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
         />
       )}
       
-      {/* Sidebar */}
       <div className={`fixed left-0 top-0 h-full w-64 bg-[#4B2D87] shadow-lg transform transition-transform duration-300 z-50 flex flex-col ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0 lg:static lg:z-auto rounded-r-3xl`}>
         
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#5E3A9F]">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
@@ -104,8 +96,7 @@ const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-6">
+        <nav className="flex-1 px-4 py-6 overflow-y-auto">
           <div className="space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -123,11 +114,9 @@ const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
                         <Icon size={20} className="text-white" />
                         <div className="flex flex-col">
                           <span className="font-medium">{employee?.name || 'Profile'}</span>
-                          {employee?.department && (
-                            <span className="text-sm text-gray-300">
-                              Department - {employee.department}
-                            </span>
-                          )}
+                          <span className="text-sm text-gray-300">
+                            {employee?.department?.name ? `Department: ${employee.department.name}` : 'No Department'}
+                          </span>
                         </div>
                       </div>
                       <ChevronDown
@@ -138,7 +127,6 @@ const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
                       />
                     </div>
                     
-                    {/* Submenu */}
                     {showProfileMenu && (
                       <div className="ml-4 mt-1 space-y-1">
                         {item.submenu.map((subItem) => (
@@ -177,7 +165,6 @@ const Sidebar = ({ isOpen, onClose }) => { // Remove handleLogout prop
           </div>
         </nav>
 
-        {/* Logout Button */}
         <div className="p-4 border-t border-[#5E3A9F] mt-auto">
           <button
             onClick={handleLogoutClick}

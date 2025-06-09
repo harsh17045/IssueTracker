@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import RegistrationForm from './RegistrationForm';
-import LoginForm from './LoginForm';
-import LoginVector from '../assets/LoginVector.png';
+import LoginForm from './LoginForm';  
+import LoginVector from '../assets/LoginVector2.png';
 
 export default function AuthPage1() {
   const location = useLocation();

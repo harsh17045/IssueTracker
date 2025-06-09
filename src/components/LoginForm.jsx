@@ -64,15 +64,29 @@ const LoginForm = ({ onRegisterClick }) => {
     setIsSubmitting(true);
     try {
       const res = await verifyUser({ email: formData.email, otp: formData.otp });
-      console.log("OTP verification response:", res);
+      console.log("Full OTP verification response:", res);
+      console.log("Employee data from response:", res.employee);
+      console.log("Department data from response:", res.employee?.department);
+      
       if (res.message === "Login Successfull") {
-        setEmployee(res.employee);
+        // Ensure department data is properly structured
+        const employeeData = {
+          ...res.employee,
+          department: res.employee.department ? {
+            _id: res.employee.department._id || res.employee.department.id,
+            name: res.employee.department.name || res.employee.department
+          } : { _id: '', name: 'No Department' }
+        };
+        console.log("Structured employee data:", employeeData);
+        setEmployee(employeeData);
+        localStorage.setItem('employee', JSON.stringify(employeeData));
         toast.success('Successfully logged in!');
         navigate('/');
       } else {
         setErrors({ otp: res.message || 'Invalid OTP' });
       }
-    } catch {
+    } catch (error) {
+      console.error("Login error:", error);
       setErrors({ otp: 'Server error during OTP verification' });
     } finally {
       setIsSubmitting(false);

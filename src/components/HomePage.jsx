@@ -68,10 +68,9 @@ const TicketCard = ({ ticket, index }) => {
 const HomePage = () => {
   const [recentTickets, setRecentTickets] = useState([]);
   const [stats, setStats] = useState([
-    { title: 'Open Tickets', value: '0', icon: AlertTriangle, color: 'bg-red-500' },
-    { title: 'Assigned', value: '0', icon: Clock, color: 'bg-blue-500' },
+    { title: 'Pending Tickets', value: '0', icon: AlertTriangle, color: 'bg-red-500' },
+    { title: 'In Progress', value: '0', icon: Clock, color: 'bg-blue-500' },
     { title: 'Resolved', value: '0', icon: CheckCircle, color: 'bg-green-500' },
-    { title: 'Closed', value: '0', icon: Lock, color: 'bg-gray-500' },
     { title: 'Revoked', value: '0', icon: XCircle, color: 'bg-yellow-500' },
     { title: 'Total Tickets', value: '0', icon: Bug, color: 'bg-purple-500' },
   ]);
@@ -87,19 +86,17 @@ const HomePage = () => {
         console.log('Fetched Tickets for Dashboard:', fetchedTickets);
         if (Array.isArray(fetchedTickets)) {
           // Calculate dynamic stats
-          const openTickets = fetchedTickets.filter(ticket => ticket.status === 'open').length;
-          const inProgressTickets = fetchedTickets.filter(ticket => ticket.status === 'assigned').length;
+          const pendingTickets = fetchedTickets.filter(ticket => ticket.status === 'pending').length;
+          const inProgressTickets = fetchedTickets.filter(ticket => ticket.status === 'in_progress').length;
           const resolvedTickets = fetchedTickets.filter(ticket => ticket.status === 'resolved').length;
-          const closedTickets = fetchedTickets.filter(ticket => ticket.status === 'closed').length;
           const revokedTickets = fetchedTickets.filter(ticket => ticket.status === 'revoked').length;
           const totalTickets = fetchedTickets.length;
 
           // Update stats with dynamic values
           setStats([
-            { title: 'Open Tickets', value: openTickets.toString(), icon: AlertTriangle, color: 'bg-red-500' },
-            { title: 'Assigned', value: inProgressTickets.toString(), icon: Clock, color: 'bg-blue-500' },
+            { title: 'Pending Tickets', value: pendingTickets.toString(), icon: AlertTriangle, color: 'bg-red-500' },
+            { title: 'In Progress', value: inProgressTickets.toString(), icon: Clock, color: 'bg-blue-500' },
             { title: 'Resolved', value: resolvedTickets.toString(), icon: CheckCircle, color: 'bg-green-500' },
-            { title: 'Closed', value: closedTickets.toString(), icon: Lock, color: 'bg-gray-500' },
             { title: 'Revoked', value: revokedTickets.toString(), icon: XCircle, color: 'bg-yellow-500' },
             { title: 'Total Tickets', value: totalTickets.toString(), icon: Bug, color: 'bg-purple-500' },
           ]);
@@ -112,10 +109,9 @@ const HomePage = () => {
         } else {
           setRecentTickets([]);
           setStats([
-            { title: 'Open Tickets', value: '0', icon: AlertTriangle, color: 'bg-red-500' },
-            { title: 'Assigned', value: '0', icon: Clock, color: 'bg-blue-500' },
+            { title: 'Pending Tickets', value: '0', icon: AlertTriangle, color: 'bg-red-500' },
+            { title: 'In Progress', value: '0', icon: Clock, color: 'bg-blue-500' },
             { title: 'Resolved', value: '0', icon: CheckCircle, color: 'bg-green-500' },
-            { title: 'Closed', value: '0', icon: Lock, color: 'bg-gray-500' },
             { title: 'Revoked', value: '0', icon: XCircle, color: 'bg-yellow-500' },
             { title: 'Total Tickets', value: '0', icon: Bug, color: 'bg-purple-500' },
           ]);
@@ -137,17 +133,14 @@ const HomePage = () => {
     if (!recentTickets) return;
 
     switch (activeFilter) {
-      case 'open':
-        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'open'));
+      case 'pending':
+        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'pending'));
         break;
-      case 'assigned':
-        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'assigned'));
+      case 'in_progress':
+        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'in_progress'));
         break;
       case 'resolved':
         setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'resolved'));
-        break;
-      case 'closed':
-        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'closed'));
         break;
       case 'revoked':
         setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'revoked'));
@@ -156,6 +149,13 @@ const HomePage = () => {
         setFilteredTickets(recentTickets);
     }
   }, [activeFilter, recentTickets]);
+
+  const statusColors = {
+    'pending': 'bg-blue-100 text-blue-800',
+    'in_progress': 'bg-purple-100 text-purple-800',
+    'resolved': 'bg-green-100 text-green-800',
+    'revoked': 'bg-yellow-100 text-yellow-800'
+  };
 
   return (
     <div className="p-6 space-y-6 bg-gray-50">
@@ -166,7 +166,7 @@ const HomePage = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ">
         {stats.map((stat, index) => (
           <StatsCard key={index} {...stat} />
         ))}
@@ -178,7 +178,7 @@ const HomePage = () => {
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Recent Tickets</h3>
-              <div className="flex space-x-2">
+              <div className="flex gap-2 overflow-x-auto pb-2">
                 <button 
                   onClick={() => setActiveFilter('all')}
                   className={`px-4 py-2 rounded-full transition-colors ${
@@ -190,24 +190,24 @@ const HomePage = () => {
                   All
                 </button>
                 <button 
-                  onClick={() => setActiveFilter('open')}
+                  onClick={() => setActiveFilter('pending')}
                   className={`px-4 py-2 rounded-full transition-colors ${
-                    activeFilter === 'open' 
+                    activeFilter === 'pending' 
                       ? 'bg-[#4B2D87] text-white' 
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  Open
+                  Pending
                 </button>
                 <button 
-                  onClick={() => setActiveFilter('assigned')}
+                  onClick={() => setActiveFilter('in_progress')}
                   className={`px-4 py-2 rounded-full transition-colors ${
-                    activeFilter === 'assigned' 
+                    activeFilter === 'in_progress' 
                       ? 'bg-[#4B2D87] text-white' 
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  Assigned
+                  In Progress
                 </button>
                 <button 
                   onClick={() => setActiveFilter('resolved')}
@@ -218,16 +218,6 @@ const HomePage = () => {
                   }`}
                 >
                   Resolved
-                </button>
-                <button 
-                  onClick={() => setActiveFilter('closed')}
-                  className={`px-4 py-2 rounded-full transition-colors ${
-                    activeFilter === 'closed' 
-                      ? 'bg-[#4B2D87] text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Closed
                 </button>
                 <button 
                   onClick={() => setActiveFilter('revoked')}

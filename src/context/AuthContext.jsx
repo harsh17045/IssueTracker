@@ -7,10 +7,24 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [employee, setEmployee] = useState(() => {
     const stored = localStorage.getItem("employee");
-    return stored ? JSON.parse(stored) : null;
+    if (stored) {
+      const parsedEmployee = JSON.parse(stored);
+      // Ensure department data is properly structured
+      if (parsedEmployee) {
+        return {
+          ...parsedEmployee,
+          department: parsedEmployee.department ? {
+            _id: parsedEmployee.department._id || parsedEmployee.department.id || '',
+            name: parsedEmployee.department.name || 'No Department'
+          } : { _id: '', name: 'No Department' }
+        };
+      }
+    }
+    return null;
   });
   const [alertMessage, setAlertMessage] = useState("");
   const [tickets, setTickets] = useState([]);
+  
 
   useEffect(() => {
     const storedEmployee = localStorage.getItem("employee");
@@ -21,7 +35,16 @@ export const AuthProvider = ({ children }) => {
       if (now > parseInt(tokenExpiry)) {
         logout();
       } else {
-        setEmployee(JSON.parse(storedEmployee));
+        const parsedEmployee = JSON.parse(storedEmployee);
+        // Ensure department data is properly structured
+        const employeeData = {
+          ...parsedEmployee,
+          department: parsedEmployee.department ? {
+            _id: parsedEmployee.department._id || parsedEmployee.department.id || '',
+            name: parsedEmployee.department.name || 'No Department'
+          } : { _id: '', name: 'No Department' }
+        };
+        setEmployee(employeeData);
         const timeout = setTimeout(() => {
           logout();
         }, parseInt(tokenExpiry) - now);

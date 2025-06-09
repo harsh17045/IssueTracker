@@ -2,17 +2,27 @@ const API_URL = "http://localhost:5000/api/employees";
 
 export const registerNewUser = async (userData) => {
   console.log("User data in authService:", userData);
-  const response = await fetch(`${API_URL}/register`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(userData),
-  });
+  try {
+    const response = await fetch(`${API_URL}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
 
-  const newresponse = await response.json();
-  console.log("Response:", newresponse);
-  return newresponse;
+    const newResponse = await response.json();
+    console.log("Response:", newResponse);
+
+    if (!response.ok) {
+      throw new Error(newResponse.message || "Registration failed");
+    }
+
+    return newResponse;
+  } catch (error) {
+    console.error("Error in registerNewUser:", error);
+    throw error;
+  }
 };
 
 export const loginUser = async (userData) => {
@@ -58,26 +68,34 @@ export const verifyUser = async (userData) => {
 export const raiseTicket = async (ticketData) => {
   try {
     const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
     const response = await fetch(`${API_URL}/raise-ticket`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(ticketData),
+      body: JSON.stringify({
+        ...ticketData,
+        status: 'pending' // Ensure new tickets start as pending
+      }),
     });
 
     const data = await response.json();
+    console.log("Ticket creation response:", data);
+    console.log("Ticket creation response status:", response);
     if (!response.ok) {
       throw new Error(data.message || "Failed to create ticket");
     }
 
-    return {
-      success: true,
-      ...data,
-    };
+    console.log("Ticket created successfully:", data);
+
+    return data;
   } catch (error) {
-    console.error("Ticket creation error:", error); // Add error logging
+    console.error("Error creating ticket:", error);
     throw error;
   }
 };
@@ -111,7 +129,7 @@ export const getMyTickets = async () => {
       _id: ticket._id,
       title: ticket.title || '',
       description: ticket.description || '',
-      status: ticket.status || 'open',
+      status: ticket.status || 'pending', // Default to pending for new tickets
       to_department: ticket.to_department || { id: '', name: 'Unknown Department' },
       createdAt: ticket.createdAt || new Date().toISOString()
     }));
@@ -160,21 +178,23 @@ export const updateProfile = async (profileData, isMultipart = false) => {
     };
 
     if (isMultipart) {
-      // Let browser set Content-Type for FormData
+      // For FormData (with file upload), don't set Content-Type
+      // Let browser set it automatically with boundary
       options.body = profileData;
     } else {
+      // For JSON data (without file upload)
       options.headers["Content-Type"] = "application/json";
       options.body = JSON.stringify(profileData);
     }
 
+    console.log("Sending profile data:", isMultipart ? "FormData" : profileData);
+
     const response = await fetch(`${API_URL}/update-profile`, options);
 
-    console.log("profile",profileData);
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
-
 
     const data = await response.json();
     return data.employee;
@@ -287,10 +307,7 @@ export const updateTicket = async (ticketId, updateData) => {
 export const getAllDepartments = async () => {
   try {
     const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
+    
     const response = await fetch(`${API_URL}/all-departments`, {
       method: 'GET',
       headers: {
@@ -298,25 +315,13 @@ export const getAllDepartments = async () => {
         'Authorization': `Bearer ${token}`
       }
     });
-    const data = await response.json();
-    console.log('Departments API Response:', data); // Debug log
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch departments');
+      throw new Error('Failed to fetch departments');
     }
 
-    // Extract departments from the 'depts' property
-    if (!data.depts || !Array.isArray(data.depts)) {
-      console.error('Invalid departments data structure:', data);
-      return [];
-    }
-
-    // Return the departments array with consistent structure
-    return data.depts.map(dept => ({
-      _id: dept._id,
-      name: dept.name
-    }));
-
+    const data = await response.json();
+    return data.depts;
   } catch (error) {
     console.error('Error fetching departments:', error);
     throw error;
@@ -335,7 +340,8 @@ export const revokeTicket = async (ticketId) => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-      }
+      },
+      body: JSON.stringify({ status: 'revoked' }) // Explicitly set status to revoked
     });
 
     const data = await response.json();
@@ -380,6 +386,36 @@ export const filterTickets = async (filters) => {
     return data.tickets;
   } catch (error) {
     console.error('Error filtering tickets:', error);
+    throw error;
+  }
+};
+
+export const getAllBuildings = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    
+    const response = await fetch(`${API_URL}/all-buildings`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`  // Add auth token
+      }
+    });
+
+    console.log('Buildings API Response:', response); // Debug log
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch buildings');
+    }
+
+    const data = await response.json();
+    if (!data.buildings || !Array.isArray(data.buildings)) {
+      throw new Error('Invalid building data received');
+    }
+
+    return data.buildings;
+  } catch (error) {
+    console.error('Error fetching buildings:', error);
     throw error;
   }
 };

@@ -8,38 +8,31 @@ import { toast } from 'react-toastify';
 const RaiseTicket = () => {
   const { employee } = useAuth();
   const navigate = useNavigate();
-  
-  // Initialize departments as an empty array
+
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    from_department: employee?.department || '',
-    raisedBy: employee?.employeeId || '',
     to_department: ''
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch only departments that can resolve tickets
   useEffect(() => {
     const fetchDepartments = async () => {
       setLoading(true);
       try {
         const data = await getAllDepartments();
-        console.log('Fetched departments:', data); // Debug log
-        
-        // Validate department structure
-        const validDepartments = data.filter(dept => 
-          dept && (dept._id || dept.id) && dept.name
+        // Only departments with canResolve === true
+        const resolvingDepartments = data.filter(
+          dept => dept && (dept._id || dept.id) && dept.name && dept.canResolve === true
         );
-        
-        if (validDepartments.length === 0) {
-          console.warn('No valid departments found in response');
-          toast.warning('No departments available');
+        setDepartments(resolvingDepartments);
+        if (resolvingDepartments.length === 0) {
+          toast.warning('No departments available for ticket resolution');
         }
-
-        setDepartments(validDepartments);
       } catch (error) {
         console.error('Failed to fetch departments:', error);
         toast.error('Failed to load departments');
@@ -48,7 +41,6 @@ const RaiseTicket = () => {
         setLoading(false);
       }
     };
-
     fetchDepartments();
   }, []);
 
@@ -58,7 +50,6 @@ const RaiseTicket = () => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -69,34 +60,44 @@ const RaiseTicket = () => {
 
   const validate = () => {
     const newErrors = {};
-    if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
-    }
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
-    }
-    if (!formData.to_department) {
-      newErrors.to_department = 'Please select a department';
-    }
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    if (!formData.to_department) newErrors.to_department = 'Please select a department';
     return newErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = validate();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      console.log('Submitting form data:', formData); // Debug log
-      await raiseTicket(formData);
-      toast.success('Ticket raised successfully');
-      navigate('/my-tickets');
+      const ticketData = {
+        title: formData.title,
+        description: formData.description,
+        from_department: employee?.department || 'No Department',
+        raisedBy: employee?._id || employee?.email || '',
+        to_department: formData.to_department // This is the department name
+      };
+
+      console.log('Submitting ticket data:', ticketData);
+      const response = await raiseTicket(ticketData);
+      console.log('Ticket response:', response);
+      if (response.message === 'Ticket raised successfully') {
+        toast.success('Ticket raised successfully!');
+        navigate('/my-tickets');
+      } else {
+        throw new Error(response.message || 'Failed to raise ticket');
+      }
+      
     } catch (error) {
+      console.error('Error raising ticket:', error);
       toast.error(error.message || 'Failed to raise ticket');
+      setErrors({ form: error.message || 'Failed to raise ticket' });
     } finally {
       setIsSubmitting(false);
     }
@@ -161,7 +162,7 @@ const RaiseTicket = () => {
               disabled={loading}
             >
               <option value="">Select department</option>
-              {Array.isArray(departments) && departments.map((dept) => (
+              {departments.map((dept) => (
                 <option key={dept._id || dept.id} value={dept.name}>
                   {dept.name}
                 </option>
