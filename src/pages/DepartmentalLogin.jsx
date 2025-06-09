@@ -65,8 +65,8 @@ const DepartmentalLogin = ({ onAdminClick }) => {
   };
 
   return (
-    <div className="p-8 flex flex-col justify-center h-[500px]">
-      <h2 className="text-2xl font-bold text-[#1B5E20] mb-2">Department Login</h2>
+    <div className="p-8 flex flex-col justify-center h-[500px] bg-white border border-gray-200 rounded-lg shadow-sm">
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">Department Login</h2>
       <p className="text-gray-600 mb-6">Sign in to access department dashboard</p>
 
       {errors.form && (
@@ -86,8 +86,8 @@ const DepartmentalLogin = ({ onAdminClick }) => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={`w-full py-3 pl-10 pr-3 border rounded-full focus:outline-none focus:ring-2 ${
-                errors.email ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-[#1B5E20]'
+              className={`w-full py-3 pl-10 pr-3 bg-white border rounded-full focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-400 ${
+                errors.email ? 'border-red-300 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 focus:ring-cyan-100 focus:border-cyan-500'
               }`}
               placeholder="your@email.com"
             />
@@ -109,8 +109,8 @@ const DepartmentalLogin = ({ onAdminClick }) => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className={`w-full py-3 pl-10 pr-3 border rounded-full focus:outline-none focus:ring-2 ${
-                errors.password ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-[#1B5E20]'
+              className={`w-full py-3 pl-10 pr-3 bg-white border rounded-full focus:outline-none focus:ring-2 text-gray-900 placeholder-gray-400 ${
+                errors.password ? 'border-red-300 focus:ring-red-100 focus:border-red-500' : 'border-gray-300 focus:ring-cyan-100 focus:border-cyan-500'
               }`}
               placeholder="Password"
             />
@@ -126,17 +126,19 @@ const DepartmentalLogin = ({ onAdminClick }) => {
           type="submit"
           disabled={isSubmitting}
           className={`w-full py-3 rounded-full text-white font-medium transition-all ${
-            isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#1B5E20] hover:bg-[#2E7D32]'
+            isSubmitting 
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg hover:shadow-cyan-500/25'
           }`}
         >
           {isSubmitting ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
 
-      <div className="text-center mt-6 pt-4 border-t border-gray-100">
+      <div className="text-center mt-6 pt-4 border-t border-gray-200">
         <p className="text-sm text-gray-600">
           Are you an admin?{' '}
-          <button onClick={onAdminClick} className="text-[#1B5E20] hover:underline font-medium">
+          <button onClick={onAdminClick} className="text-cyan-600 hover:text-cyan-700 hover:underline font-medium transition-colors">
             Login here
           </button>
         </p>

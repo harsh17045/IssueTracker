@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getAdminInfo, getAdminToken } from '../service/adminAuthService';
+import { useNavigate } from 'react-router-dom';
 
 const AdminAuthContext = createContext(null);
 
@@ -7,6 +8,7 @@ export const AdminAuthProvider = ({ children }) => {
   const [admin, setAdmin] = useState(null);
   const [adminToken, setAdminToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check for existing admin session
@@ -20,6 +22,14 @@ export const AdminAuthProvider = ({ children }) => {
     
     setLoading(false);
   }, []);
+
+  const logout = () => {
+    setAdmin(null);
+    setAdminToken(null); // Explicitly clear the token state
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminData');
+    navigate('/admin/login');
+  };
 
   const updateAdminContext = (adminData) => {
     if (adminData) {
@@ -36,6 +46,7 @@ export const AdminAuthProvider = ({ children }) => {
     adminToken,
     loading,
     updateAdminContext,
+    logout, // Expose logout function in the context
   };
 
   return (
@@ -45,7 +56,7 @@ export const AdminAuthProvider = ({ children }) => {
   );
 };
 
-export const useAdminAuth =() => {
+export const useAdminAuth = () => {
   const context = useContext(AdminAuthContext);
   if (!context) {
     throw new Error('useAdminAuth must be used within an AdminAuthProvider');
