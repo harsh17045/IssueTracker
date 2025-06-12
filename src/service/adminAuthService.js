@@ -115,21 +115,22 @@ export const getEmployeeDetails = async (employeeId) => {
 
 export const getAllDepartments = async () => {
   try {
-    const response = await makeAuthorizedRequest('/get-departments');
-    
-    if (!response || !response.depts) {
-      throw new Error('Invalid department data received');
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_URL}/get-departments`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch departments');
     }
-
-    return {
-      depts: response.depts
-    };
+    return data;
   } catch (error) {
     console.error('Error fetching departments:', error);
     throw error;
   }
 };
-
 
 export const addDepartment = async (departmentData) => {
   try {
@@ -144,6 +145,7 @@ export const addDepartment = async (departmentData) => {
   }
 };
 
+
 export const updateDepartment = async (deptId, departmentData) => {
   try {
     const response = await makeAuthorizedRequest(`/update-department/${deptId}`, {
@@ -157,6 +159,7 @@ export const updateDepartment = async (deptId, departmentData) => {
   }
 };
 
+
 export const deleteDepartment = async (deptId) => {
   try {
     const response = await makeAuthorizedRequest(`/delete-department/${deptId}`, {
@@ -169,6 +172,8 @@ export const deleteDepartment = async (deptId) => {
     throw error;
   }
 };
+
+
 
 export const generateTicketReport = async () => {
   try {
@@ -196,3 +201,118 @@ export const generateTicketReport = async () => {
     throw error;
   }
 };
+
+export const getAllBuildings = async () => {
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) throw new Error('No authentication token found');
+    
+    const response = await fetch(`${API_URL}/all-buildings`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to fetch buildings');
+    return data.buildings || []; // Return the buildings array directly
+  } catch (error) {
+    console.error('Error fetching buildings:', error);
+    throw error;
+  }
+};
+
+export const addBuilding = async (buildingData) => {
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) throw new Error('No authentication token found');
+
+    console.log('Building data:', buildingData);
+
+    // Format the data to match backend expectations
+    const formattedData = {
+      name: buildingData.name,
+      floors: buildingData.floors.map((floor, index) => ({
+        floor: floor.floor,
+        labs: Array.isArray(floor.labs) ? floor.labs : floor.labs.split(',').map(lab => lab.trim()).filter(Boolean)
+      }))
+    };
+
+    const response = await fetch(`${API_URL}/add-building`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(formattedData)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to add building');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error adding building:', error);
+    throw error;
+  }
+};
+
+// Departmental Admin Functions
+export const getAllDepartmentalAdmins = async () => {
+  try {
+    const response = await makeAuthorizedRequest('/get-departmental-admins');
+    console.log('Departmental admins:', response);
+
+    // Check if response.admin exists and is an array
+    if (!response.admin || !Array.isArray(response.admin)) {
+      throw new Error('Invalid admin data received');
+    }
+
+    // Map the response to match the expected structure
+    const formattedAdmins = response.admin.map(admin => ({
+      _id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      department: {
+        _id: admin.department._id,
+        name: admin.department.name,
+        description: admin.department.description
+      },
+      isFirstLogin: admin.isFirstLogin,
+      createdAt: admin.createdAt,
+      updatedAt: admin.updatedAt
+    }));
+
+    return formattedAdmins;
+  } catch (error) {
+    console.error('Error fetching departmental admins:', error);
+    throw error;
+  }
+};
+
+export const createDepartmentalAdmin = async (adminData) => {
+  try {
+    const response = await makeAuthorizedRequest('/create-departmental-admin', {
+      method: 'POST',
+      body: JSON.stringify(adminData)
+    });
+    return response;
+  } catch (error) {
+    console.error('Error creating departmental admin:', error);
+    throw error;
+  }
+};
+
+// export const deleteDepartmentalAdmin = async (adminId) => {
+//   try {
+//     const response = await makeAuthorizedRequest(`/delete-departmental-admin/${adminId}`, {
+//       method: 'DELETE'
+//     });
+//     return response;
+//   } catch (error) {
+//     console.error('Error deleting departmental admin:', error);
+//     throw error;
+//   }
+// };

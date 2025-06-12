@@ -12,7 +12,10 @@ import Employee from './pages/Employee';
 import EmployeeDetail from './pages/EmployeeDetail';
 import Tickets from './pages/Tickets'; 
 import Departments from './pages/Departments';
+import Building from './pages/Buildings'; // Import the new Building page
 import Reports from './pages/Reports';
+import DepartmentalAdmins from './pages/DepartmentalAdmins';
+//import DepartmentalAdmins from './pages/DepartmentalAdmins';
 
 const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -60,6 +63,11 @@ const App = () => {
           <Route path="/admin/employee/:id" element={<EmployeeDetail />} />
           <Route path="/admin/departments" element={<Departments />} />
           <Route path="/admin/reports" element={<Reports />} />
+          <Route path="/admin/buildings" element={<Building />} /> {/* New Building page route */}
+          <Route path="/admin/departmental-admins" element={<DepartmentalAdmins />} />
+          {/* <Route path="/admin/departmental-admins" element={<DepartmentalAdmins />} /> */}
+
+          {/* Fallback Route */}
         </Routes>
       </AdminAuthProvider>
     </Router>
