@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Search, Building2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Add this import
 import { getAllTickets, getAllDepartments } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
 import AdminLayout from '../layout/AdminLayout';
 
 const Tickets = () => {
+  const navigate = useNavigate(); // Add this hook
   const [tickets, setTickets] = useState({});
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentDepartment, setCurrentDepartment] = useState('');
+  const [sortField, setSortField] = useState('createdAt');
+  const [sortDirection, setSortDirection] = useState('desc');
 
   const getColorTheme = (index) => {
     const colors = [
@@ -55,14 +59,41 @@ const Tickets = () => {
     }
   };
 
-  const filteredTickets = currentDepartment && tickets[currentDepartment] ? 
-    tickets[currentDepartment].filter(ticket => {
-      const matchesSearch = 
-        ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = !statusFilter || ticket.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    }) : [];
+  const sortTickets = (tickets) => {
+    return [...tickets].sort((a, b) => {
+      if (sortField === 'createdAt') {
+        return sortDirection === 'desc' 
+          ? new Date(b.createdAt) - new Date(a.createdAt)
+          : new Date(a.createdAt) - new Date(b.createdAt);
+      }
+      if (sortField === 'title') {
+        return sortDirection === 'desc'
+          ? b.title.localeCompare(a.title)
+          : a.title.localeCompare(b.title);
+      }
+      if (sortField === 'status') {
+        return sortDirection === 'desc'
+          ? b.status.localeCompare(a.status)
+          : a.status.localeCompare(b.status);
+      }
+      return 0;
+    });
+  };
+
+  const filteredTickets = currentDepartment && tickets[currentDepartment] 
+    ? sortTickets(tickets[currentDepartment].filter(ticket => {
+        const matchesSearch = 
+          ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = !statusFilter || ticket.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      }))
+    : [];
+
+  // Add click handler
+  const handleTicketClick = (ticketId) => {
+    navigate(`/admin/tickets/${ticketId}`);
+  };
 
   return (
     <AdminLayout>
@@ -128,30 +159,65 @@ const Tickets = () => {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                    onClick={() => {
+                      setSortDirection(sortField === 'title' && sortDirection === 'asc' ? 'desc' : 'asc');
+                      setSortField('title');
+                    }}
+                  >
+                    Title
+                    {sortField === 'title' && (
+                      <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">From</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                    onClick={() => {
+                      setSortDirection(sortField === 'status' && sortDirection === 'asc' ? 'desc' : 'asc');
+                      setSortField('status');
+                    }}
+                  >
+                    Status
+                    {sortField === 'status' && (
+                      <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                    onClick={() => {
+                      setSortDirection(sortField === 'createdAt' && sortDirection === 'asc' ? 'desc' : 'asc');
+                      setSortField('createdAt');
+                    }}
+                  >
+                    Created
+                    {sortField === 'createdAt' && (
+                      <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center">Loading tickets...</td>
+                    <td colSpan="4" className="px-6 py-4 text-center">Loading tickets...</td>
                   </tr>
                 ) : filteredTickets.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center">No tickets found</td>
+                    <td colSpan="4" className="px-6 py-4 text-center">No tickets found</td>
                   </tr>
                 ) : (
                   filteredTickets.map((ticket) => (
-                    <tr key={ticket._id} className="hover:bg-gray-50">
+                    <tr 
+                      key={ticket._id} 
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => handleTicketClick(ticket._id)}
+                    >
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">{ticket.title}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">{ticket.from_department}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{ticket.description}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           ticket.status === 'pending' ? 'bg-blue-100 text-blue-800' :

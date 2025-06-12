@@ -15,7 +15,7 @@ import Departments from './pages/Departments';
 import Building from './pages/Buildings'; // Import the new Building page
 import Reports from './pages/Reports';
 import DepartmentalAdmins from './pages/DepartmentalAdmins';
-//import DepartmentalAdmins from './pages/DepartmentalAdmins';
+import TicketDetail from './pages/TicketDetail'; // Import the TicketDetail component
 
 const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -65,7 +65,7 @@ const App = () => {
           <Route path="/admin/reports" element={<Reports />} />
           <Route path="/admin/buildings" element={<Building />} /> {/* New Building page route */}
           <Route path="/admin/departmental-admins" element={<DepartmentalAdmins />} />
-          {/* <Route path="/admin/departmental-admins" element={<DepartmentalAdmins />} /> */}
+          <Route path="/admin/tickets/:ticketId" element={<TicketDetail />} /> {/* New TicketDetail route */}
 
           {/* Fallback Route */}
         </Routes>

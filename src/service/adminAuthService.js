@@ -73,6 +73,7 @@ export const makeAuthorizedRequest = async (endpoint, options = {}) => {
 export const getAllTickets = async () => {
   try {
     const response = await makeAuthorizedRequest('/get-all-tickets');
+    console.log('All tickets:', response);
     return response.tickets; // Assuming the backend returns { tickets: [...] }
   } catch (error) {
     console.error('Error fetching all tickets:', error);
@@ -316,3 +317,28 @@ export const createDepartmentalAdmin = async (adminData) => {
 //     throw error;
 //   }
 // };
+
+
+export const getAttachment = async (filename) => {
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) throw new Error('No authentication token found');
+    console.log('Fetching attachment for filename:', filename);
+
+    const response = await fetch(`${API_URL}/get-attachment/${filename}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    console.log('Attachment response:', response);
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch attachment');
+    }
+
+    return response;
+  } catch (error) {
+    console.error('Error fetching attachment:', error);
+    throw error;
+  }
+};
