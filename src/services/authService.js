@@ -65,34 +65,38 @@ export const verifyUser = async (userData) => {
   return data;
 };
 
-export const raiseTicket = async (ticketData) => {
+export const raiseTicket = async (ticketData, file) => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
       throw new Error("No authentication token found");
     }
 
+    const formData = new FormData();
+    formData.append("title", ticketData.title);
+    formData.append("description", ticketData.description);
+    formData.append("to_department", ticketData.to_department);
+    formData.append("priority", ticketData.priority || "normal");
+    
+    if (file) {
+      formData.append("attachment", file);
+    }
+
     const response = await fetch(`${API_URL}/raise-ticket`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        ...ticketData,
-        status: 'pending' // Ensure new tickets start as pending
-      }),
+      body: formData,
     });
 
+    console.log("Raise ticket response:", response);
     const data = await response.json();
-    console.log("Ticket creation response:", data);
-    console.log("Ticket creation response status:", response);
+    
     if (!response.ok) {
       throw new Error(data.message || "Failed to create ticket");
     }
-
-    console.log("Ticket created successfully:", data);
-
+    
     return data;
   } catch (error) {
     console.error("Error creating ticket:", error);

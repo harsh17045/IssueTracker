@@ -16,6 +16,7 @@ const RaiseTicket = () => {
     description: '',
     to_department: ''
   });
+  const [attachment, setAttachment] = useState(null); // <-- NEW
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -58,6 +59,11 @@ const RaiseTicket = () => {
     }
   };
 
+  // NEW: Handle file input
+  const handleFileChange = (e) => {
+    setAttachment(e.target.files[0]);
+  };
+
   const validate = () => {
     const newErrors = {};
     if (!formData.title.trim()) newErrors.title = 'Title is required';
@@ -83,9 +89,10 @@ const RaiseTicket = () => {
         raisedBy: employee?._id || employee?.email || '',
         to_department: formData.to_department // This is the department name
       };
-
-      console.log('Submitting ticket data:', ticketData);
-      const response = await raiseTicket(ticketData);
+      
+      console.log('Raising ticket with data:', ticketData,attachment);
+      // Pass the file as the second argument
+      const response = await raiseTicket(ticketData, attachment);
       console.log('Ticket response:', response);
       if (response.message === 'Ticket raised successfully') {
         toast.success('Ticket raised successfully!');
@@ -173,6 +180,60 @@ const RaiseTicket = () => {
                 <AlertCircle size={14} className="mr-1" /> {errors.to_department}
               </p>
             )}
+          </div>
+
+          {/* File input for attachment */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Attachment (optional)
+            </label>
+            <div className="mt-1 flex justify-center px-6 py-4 border-2 border-dashed rounded-lg border-gray-300 hover:border-[#4B2D87] transition-colors">
+              <div className="space-y-1 text-center">
+                {attachment ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="flex items-center px-3 py-2 rounded-lg bg-purple-50 text-[#4B2D87]">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                          d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                      <span className="text-sm">{attachment.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setAttachment(null)}
+                        className="ml-2 text-red-500 hover:text-red-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4-4m4-4h8m-4-4v8m-12 4h.02" 
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <div className="flex text-sm text-gray-600">
+                      <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-[#4B2D87] hover:text-[#5E3A9F] focus-within:outline-none">
+                        <span>Upload a file</span>
+                        <input 
+                          id="file-upload" 
+                          name="attachment" 
+                          type="file" 
+                          onChange={handleFileChange}
+                          className="sr-only" 
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      PDF, PNG, JPG up to 10MB
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end">

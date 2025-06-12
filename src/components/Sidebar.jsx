@@ -22,8 +22,6 @@ const Sidebar = ({ isOpen, onClose }) => {
   const { employee } = useAuth();
 
   useEffect(() => {
-    console.log("Sidebar employee data:", employee);
-    console.log("Sidebar department data:", employee?.department);
   }, [employee]);
 
   useEffect(() => {
