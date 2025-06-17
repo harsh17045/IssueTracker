@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { DownloadCloud, BarChart2, FileText, Loader } from 'lucide-react';
 import { generateTicketReport } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
-import AdminLayout from '../layout/AdminLayout';
 
 const Reports = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -32,8 +31,7 @@ const Reports = () => {
   };
 
   return (
-    <AdminLayout>
-      <div className="p-6 max-w-[1600px] mx-auto">
+        <div className="p-6 max-w-[1600px] mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Reports</h1>
           <p className="text-gray-600">Generate and download reports</p>
@@ -100,7 +98,6 @@ const Reports = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

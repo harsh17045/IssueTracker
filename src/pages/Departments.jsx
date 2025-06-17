@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Building2, Search, UserPlus, Plus, Pencil, Trash2 } from 'lucide-react';
 import { getAllDepartments, addDepartment, updateDepartment, deleteDepartment } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
-import AdminLayout from '../layout/AdminLayout';
+
 
 const Departments = () => {
   const [departments, setDepartments] = useState([]);
@@ -103,7 +103,6 @@ const Departments = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="p-6 max-w-[1600px] mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Departments</h1>
@@ -238,7 +237,6 @@ const Departments = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

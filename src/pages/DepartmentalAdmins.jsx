@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { UserCog, Search, Plus, Mail } from 'lucide-react';
 import { createDepartmentalAdmin, getAllDepartments, getAllDepartmentalAdmins } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
-import AdminLayout from '../layout/AdminLayout';
 
 const DepartmentalAdmins = () => {
   const [departmentalAdmins, setDepartmentalAdmins] = useState([]);
@@ -28,7 +27,9 @@ const DepartmentalAdmins = () => {
       ]);
       console.log('Fetched Departmental Admins:', adminsData);
       setDepartmentalAdmins(adminsData || []);
-      setDepartments(departmentsData.depts || []);
+      // Filter departments to only include those with canResolve set to true
+      const filteredDepartments = (departmentsData.depts || []).filter(dept => dept.canResolve);
+      setDepartments(filteredDepartments);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to fetch data');
@@ -52,16 +53,13 @@ const DepartmentalAdmins = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4B2D87]"></div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Departmental Admins</h1>
@@ -179,8 +177,7 @@ const DepartmentalAdmins = () => {
             </div>
           </div>
         )}
-      </div>
-    </AdminLayout>
+      </div>  
   );
 };
 

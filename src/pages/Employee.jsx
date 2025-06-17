@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, MoreVertical } from 'lucide-react';
 import { getAllEmployees } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
-import AdminLayout from '../layout/AdminLayout';
 import { useNavigate } from 'react-router-dom';
 
 const Employee = () => {
@@ -40,7 +39,6 @@ const Employee = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="p-6 max-w-[1600px] mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Employees</h1>
@@ -166,7 +164,6 @@ const Employee = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

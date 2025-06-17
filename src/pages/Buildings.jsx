@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Building2, AlertCircle } from 'lucide-react';
 import { getAllBuildings } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
-import AdminLayout from '../layout/AdminLayout';
 import AddBuildingModal from '../components/AddBuildingModal';
+import { div } from 'framer-motion/client';
 
 const Buildings = () => {
   const [buildings, setBuildings] = useState([]);
@@ -52,16 +52,14 @@ const Buildings = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-screen">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4B2D87]"></div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
+    <div>
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Buildings</h1>
@@ -193,7 +191,7 @@ const Buildings = () => {
           onSuccess={handleAddBuildingSuccess}
         />
       )}
-    </AdminLayout>
+      </div>
   );
 };
 

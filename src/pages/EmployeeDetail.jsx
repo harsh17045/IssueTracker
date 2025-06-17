@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { getEmployeeDetails } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
-import AdminLayout from '../layout/AdminLayout';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -59,16 +58,13 @@ const EmployeeDetail = () => {
 
   if (loading || !employee) {
     return (
-      <AdminLayout>
         <div className="p-6">
           <div className="text-center">Loading employee details...</div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="p-6 max-w-[1600px] mx-auto">
         <div className="mb-6">
           <Link
@@ -262,7 +258,6 @@ const EmployeeDetail = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

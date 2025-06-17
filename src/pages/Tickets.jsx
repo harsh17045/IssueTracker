@@ -3,8 +3,6 @@ import { Search, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom'; // Add this import
 import { getAllTickets, getAllDepartments } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
-import AdminLayout from '../layout/AdminLayout';
-
 const Tickets = () => {
   const navigate = useNavigate(); // Add this hook
   const [tickets, setTickets] = useState({});
@@ -96,7 +94,6 @@ const Tickets = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="p-6 max-w-[1600px] mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Department Tickets</h1>
@@ -239,7 +236,6 @@ const Tickets = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

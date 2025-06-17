@@ -1,6 +1,7 @@
 import { MoreHorizontal, TrendingUp, TrendingDown, Download, Calendar, Ticket, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getAllTickets } from '../service/adminAuthService';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const [selectedMonth, setSelectedMonth] = useState('Jan 2025');
@@ -10,6 +11,7 @@ const AdminDashboard = () => {
     resolved: [],
     revoked: [],
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -196,7 +198,9 @@ const AdminDashboard = () => {
       <div className="bg-gray-100 rounded-2xl p-6 border border-gray-300 mb-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Ticket Management</h2>
-          <button className="bg-gradient-to-r from-purple-400 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-500 hover:to-pink-600 transition-colors">
+          <button
+          onClick={() => navigate('/admin/tickets')} 
+          className="bg-gradient-to-r from-purple-400 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-500 hover:to-pink-600 transition-colors">
             View All Tickets
           </button>
         </div>

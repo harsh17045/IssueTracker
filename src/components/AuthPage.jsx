@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import DepartmentalLogin from '../pages/DepartmentalLogin';
 import AdminLogin from '../pages/AdminLogin';
 import LoginVector from '../assets/login.png';
+import { AdminAuthProvider } from '../context/AdminAuthContext';
+import { DeptAuthProvider } from '../context/DeptAuthContext';
 
 const AnimatedText = ({ text }) => {
   // Split text into words, keeping spaces
@@ -101,14 +102,18 @@ export default function AuthPage() {
               <div className={`w-full transition-opacity duration-300 ${
                 isAdminActive ? 'hidden' : 'block'
               }`}>
-                <DepartmentalLogin onAdminClick={handleToggleForm} />
+                <DeptAuthProvider>
+                  <DepartmentalLogin onAdminClick={handleToggleForm} />
+                </DeptAuthProvider>
               </div>
 
               {/* Admin Login */}
               <div className={`w-full transition-opacity duration-300 ${
                 !isAdminActive ? 'hidden' : 'block'
               }`}>
-                <AdminLogin onDeptClick={handleToggleForm} />
+                <AdminAuthProvider>
+                  <AdminLogin onDeptClick={handleToggleForm} />
+                </AdminAuthProvider>
               </div>
             </div>
 

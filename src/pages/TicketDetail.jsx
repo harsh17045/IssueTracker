@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, User, Calendar, Clock } from 'lucide-react';
 import { toast } from 'react-toastify';
-import AdminLayout from '../layout/AdminLayout';
 import { getAllTickets, getAttachment } from '../service/adminAuthService';
 
 const TicketDetail = () => {
@@ -81,16 +80,13 @@ const TicketDetail = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4B2D87]"></div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="p-6">
         <div className="mb-6">
           <Link
@@ -197,7 +193,6 @@ const TicketDetail = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

@@ -1,75 +1,123 @@
-import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AuthPage from './components/authPage';
 import { AdminAuthProvider } from './context/AdminAuthContext';
+import { DeptAuthProvider } from './context/DeptAuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import DeptProtectedRoute from './components/DeptProtectedRoute';
 import AdminSidebar from './components/AdminSidebar';
 import AdminHeader from './components/AdminHeader';
-import AdminDashboard from './components/AdminDashboard'; // Import the new dashboard
+import AdminDashboard from './components/AdminDashboard';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Employee from './pages/Employee';
 import EmployeeDetail from './pages/EmployeeDetail';
 import Tickets from './pages/Tickets'; 
 import Departments from './pages/Departments';
-import Building from './pages/Buildings'; // Import the new Building page
+import Building from './pages/Buildings';
 import Reports from './pages/Reports';
 import DepartmentalAdmins from './pages/DepartmentalAdmins';
-import TicketDetail from './pages/TicketDetail'; // Import the TicketDetail component
+import TicketDetail from './pages/TicketDetail';
+import AdminLayout from './layout/AdminLayout';
+import DeptDashboard from './pages/Dept/Dashboard';
+import DepartmentLayout from './layout/DepartmentLayout';
+
+// Admin Routes Component
+const AdminRoutes = () => {
+  return (
+    <div className="flex h-screen bg-[#0B1426]">
+      <div className="flex-1 flex flex-col">
+        <AdminLayout>
+        <main className="flex-1 overflow-y-auto">
+          <Routes>
+            <Route path="/dashboard" element={<AdminDashboard />} />
+            <Route path="/employee" element={<Employee />} />
+            <Route path="/tickets" element={<Tickets />} />
+            <Route path="/employee/:id" element={<EmployeeDetail />} />
+            <Route path="/departments" element={<Departments />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/buildings" element={<Building />} />
+            <Route path="/departmental-admins" element={<DepartmentalAdmins />} />
+            <Route path="/tickets/:ticketId" element={<TicketDetail />} />
+            <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
+          </Routes>
+        </main>
+        </AdminLayout>
+      </div>
+    </div>
+  );
+};
+
+// Departmental Admin Routes Component
+const DeptAdminRoutes = () => {
+  return (
+    <DepartmentLayout>
+      <Routes>
+        <Route path="/dashboard" element={<DeptDashboard/>} />
+        <Route path="*" element={<Navigate to="/dept/dashboard" replace />} />
+      </Routes>
+    </DepartmentLayout>
+  );
+};
+
+// Auth Routes Component
+const AuthRoutes = () => {
+  return (
+    <Routes>
+      <Route path="/admin-login" element={<AuthPage />} />
+      <Route path="/dept-login" element={<AuthPage />} />
+    </Routes>
+  );
+};
 
 const App = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
     <Router>
-      <AdminAuthProvider>
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="dark" // Changed to dark theme to match the design
-        />
-        <Routes>
-          {/* Auth Routes */}
-          <Route path="/" element={<Navigate to="/admin-login" replace />} />
-          <Route path="/admin-login" element={<AuthPage />} />
-          <Route path="/dept-login" element={<AuthPage />} />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Navigate to="/admin-login" replace />} />
+        
+        {/* Auth Routes */}
+        <Route path="/*" element={<AuthRoutes />} />
 
-          {/* Protected Admin Dashboard Route */}
-          <Route
-            path="/admin/dashboard"
-            element={
+        {/* Admin Routes */}
+        <Route
+          path="/admin/*"
+          element={
+            <AdminAuthProvider>
               <ProtectedRoute>
-                <div className="flex h-screen bg-[#0B1426]"> {/* Updated background color */}
-                  <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-                  <div className="flex-1 flex flex-col">
-                    <AdminHeader onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-                    <main className="flex-1 overflow-y-auto">
-                      <AdminDashboard /> {/* Use the new dashboard component */}
-                    </main>
-                  </div>
-                </div>
+                <AdminRoutes />
               </ProtectedRoute>
-            }
-          />
-          <Route path="/admin/employee" element={<Employee />} />
-          <Route path="/admin/tickets" element={<Tickets />} />
-          <Route path="/admin/employee/:id" element={<EmployeeDetail />} />
-          <Route path="/admin/departments" element={<Departments />} />
-          <Route path="/admin/reports" element={<Reports />} />
-          <Route path="/admin/buildings" element={<Building />} /> {/* New Building page route */}
-          <Route path="/admin/departmental-admins" element={<DepartmentalAdmins />} />
-          <Route path="/admin/tickets/:ticketId" element={<TicketDetail />} /> {/* New TicketDetail route */}
+            </AdminAuthProvider>
+          }
+        />
 
-          {/* Fallback Route */}
-        </Routes>
-      </AdminAuthProvider>
+        {/* Departmental Admin Routes */}
+        <Route
+          path="/dept/*"
+          element={
+            <DeptAuthProvider>
+              <DeptProtectedRoute>
+                <DeptAdminRoutes />
+              </DeptProtectedRoute>
+            </DeptAuthProvider>
+          }
+        />
+
+        {/* Fallback Route */}
+        <Route path="*" element={<Navigate to="/admin-login" replace />} />
+      </Routes>
     </Router>
   );
 };
