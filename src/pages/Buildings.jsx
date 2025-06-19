@@ -3,7 +3,7 @@ import { Plus, Search, Edit2, Trash2, Building2, AlertCircle } from 'lucide-reac
 import { getAllBuildings } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
 import AddBuildingModal from '../components/AddBuildingModal';
-import { div } from 'framer-motion/client';
+// import { div } from 'framer-motion/client';
 
 const Buildings = () => {
   const [buildings, setBuildings] = useState([]);
@@ -101,13 +101,13 @@ const Buildings = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                      onClick={() => handleEdit(building)}
+                      // onClick={() => handleEdit(building)}
                     >
                       <Edit2 size={16} className="text-gray-500" />
                     </button>
                     <button
                       className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                      onClick={() => handleDelete(building._id)}
+                      // onClick={() => handleDelete(building._id)}
                     >
                       <Trash2 size={16} className="text-red-500" />
                     </button>

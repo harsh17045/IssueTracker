@@ -6,19 +6,22 @@ import { useState } from 'react';
 const DepartmentLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  console.log('DepartmentLayout rendered');
+  console.log('isSidebarOpen:', isSidebarOpen);
+
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <DeptSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col lg:ml-64">
         {/* Header */}
         <DeptHeader onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
         
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto p-6 mt-16">
+            <Outlet />
         </main>
       </div>
     </div>

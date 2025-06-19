@@ -183,7 +183,7 @@ export const generateTicketReport = async () => {
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch(`${API_URL}/export-report`, {
+    const response = await fetch(`${API_URL}/export-report-pdf`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -232,7 +232,7 @@ export const addBuilding = async (buildingData) => {
     // Format the data to match backend expectations
     const formattedData = {
       name: buildingData.name,
-      floors: buildingData.floors.map((floor, index) => ({
+      floors: buildingData.floors.map((floor) => ({
         floor: floor.floor,
         labs: Array.isArray(floor.labs) ? floor.labs : floor.labs.split(',').map(lab => lab.trim()).filter(Boolean)
       }))

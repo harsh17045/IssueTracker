@@ -54,7 +54,7 @@ const DepartmentAdminSidebar = ({ isOpen, onClose }) => {
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dept/dashboard' },
     { id: 'employees', label: 'Department Employees', icon: Users, path: '/dept/employees' },
     { id: 'tickets', label: 'Department Tickets', icon: Bug, path: '/dept/tickets' },
-    { id: 'assignments', label: 'Ticket Assignments', icon: UserCheck, path: '/dept/assignments' },
+    { id: 'ticket-assigned', label: 'Ticket Assigned', icon: UserCheck, path: '/dept/ticket-assigned' },
     { id: 'reports', label: 'Department Reports', icon: BarChart3, path: '/dept/reports' },
     { id: 'department-info', label: 'Department Info', icon: Building2, path: '/dept/department-info' },
     {

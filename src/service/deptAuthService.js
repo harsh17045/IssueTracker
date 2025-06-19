@@ -129,3 +129,82 @@ export const changeDeptAdminPassword = async (email, newPassword) => {
     };
   }
 };
+
+export const getDepartmentTickets = async () => {
+  try {
+    const token = getDeptAdminToken();
+    if (!token) {
+      return {
+        success: false,
+        message: 'Authentication token not found'
+      };
+    }
+
+    const response = await fetch(`${API_URL}/get-tickets`, {
+      method: 'GET',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Failed to fetch tickets'
+      };
+    }
+
+    return {
+      success: true,
+      tickets: data.tickets,
+      message: 'Tickets fetched successfully'
+    };
+  } catch (error) {
+    console.error('Error in getDepartmentTickets:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to fetch tickets'
+    };
+  }
+};
+
+export const getDepartmentAttachment = async (filename) => {
+  try {
+    const token = getDeptAdminToken();
+    if (!token) {
+      return {
+        success: false,
+        message: 'Authentication token not found'
+      };
+    }
+
+    const response = await fetch(`${API_URL}/get-attachment/${filename}`, {
+      method: 'GET',
+      headers: { 
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        message: errorData.message || 'Failed to fetch attachment'
+      };
+    }
+
+    return {
+      success: true,
+      data: response,
+      message: 'Attachment fetched successfully'
+    };
+  } catch (error) {
+    console.error('Error in getDepartmentAttachment:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to fetch attachment'
+    };
+  }
+};

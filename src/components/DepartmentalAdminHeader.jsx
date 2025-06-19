@@ -11,7 +11,7 @@ const DepartmentAdminHeader = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between z-40">
+    <header className="fixed top-0 right-0 lg:left-64 h-16 bg-white border-b border-gray-300 px-6 py-4 flex items-center justify-between z-40">
       {/* Left Section - Mobile Menu Button */}
       <button
         onClick={onMenuClick}

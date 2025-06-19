@@ -4,8 +4,6 @@ import { AdminAuthProvider } from './context/AdminAuthContext';
 import { DeptAuthProvider } from './context/DeptAuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import DeptProtectedRoute from './components/DeptProtectedRoute';
-import AdminSidebar from './components/AdminSidebar';
-import AdminHeader from './components/AdminHeader';
 import AdminDashboard from './components/AdminDashboard';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -19,6 +17,9 @@ import DepartmentalAdmins from './pages/DepartmentalAdmins';
 import TicketDetail from './pages/TicketDetail';
 import AdminLayout from './layout/AdminLayout';
 import DeptDashboard from './pages/Dept/Dashboard';
+import DepartmentTickets from './pages/Dept/Tickets';
+import DepartmentTicketDetail from './pages/Dept/TicketDetail';
+import TicketAssigned from './pages/Dept/TicketAssigned';
 import DepartmentLayout from './layout/DepartmentLayout';
 
 // Admin Routes Component
@@ -47,18 +48,6 @@ const AdminRoutes = () => {
   );
 };
 
-// Departmental Admin Routes Component
-const DeptAdminRoutes = () => {
-  return (
-    <DepartmentLayout>
-      <Routes>
-        <Route path="/dashboard" element={<DeptDashboard/>} />
-        <Route path="*" element={<Navigate to="/dept/dashboard" replace />} />
-      </Routes>
-    </DepartmentLayout>
-  );
-};
-
 // Auth Routes Component
 const AuthRoutes = () => {
   return (
@@ -70,6 +59,7 @@ const AuthRoutes = () => {
 };
 
 const App = () => {
+  console.log('App component rendered');
   return (
     <Router>
       <ToastContainer
@@ -105,15 +95,45 @@ const App = () => {
 
         {/* Departmental Admin Routes */}
         <Route
-          path="/dept/*"
+          path="/dept"
           element={
             <DeptAuthProvider>
               <DeptProtectedRoute>
-                <DeptAdminRoutes />
+                <DepartmentLayout />
               </DeptProtectedRoute>
             </DeptAuthProvider>
           }
-        />
+        >
+          <Route 
+            path="dashboard" 
+            element={
+              <div>
+                <DeptDashboard />
+              </div>
+            } 
+          />
+          <Route 
+            path="tickets" 
+            element={<DepartmentTickets />} 
+          />
+          <Route 
+            path="tickets/:ticketId" 
+            element={<DepartmentTicketDetail />} 
+          />
+          <Route 
+            path="ticket-assigned" 
+            element={<TicketAssigned />} 
+          />
+          <Route 
+            path="*" 
+            element={
+              <div>
+                <p>Fallback route matched</p>
+                <Navigate to="/dept/dashboard" replace />
+              </div>
+            } 
+          />
+        </Route>
 
         {/* Fallback Route */}
         <Route path="*" element={<Navigate to="/admin-login" replace />} />
