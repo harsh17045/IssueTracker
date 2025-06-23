@@ -17,7 +17,7 @@ const AdminDashboard = () => {
     const fetchTickets = async () => {
       try {
         const tickets = await getAllTickets();
-
+        console.log("hii",tickets._id);
         // Group tickets by status
         const pending = tickets.filter(ticket => ticket.status === 'pending');
         const in_progress = tickets.filter(ticket => ticket.status === 'in_progress');
@@ -222,13 +222,15 @@ const AdminDashboard = () => {
                   <div className="space-y-3">
                     {column.tickets.map((ticket, idx) => (
                       <div
-                        key={idx}
+                        onClick={() => navigate(`/admin/tickets/${ticket._id}`)} // Use ticket._id
+                        key={ticket._id || idx} // Use _id as the key if available
                         className="bg-gray-50 border border-gray-200 rounded-lg p-3 hover:border-gray-400 transition-colors cursor-pointer group"
                       >
                         <div className="flex items-start justify-between mb-2">
                           <h4 className="text-sm font-medium text-gray-800 truncate pr-2">
                             {ticket.title}
                           </h4>
+
                           <button className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
                             <MoreHorizontal size={14} />
                           </button>
@@ -238,20 +240,17 @@ const AdminDashboard = () => {
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-500">
-                            #{ticket.id || idx + 1}
+                            #{ticket._id.slice(-6)} {/* Display the last 6 characters of the ID */}
                           </span>
-                          <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${column.color}`}></div>
+                          <div
+                            className={`w-2 h-2 rounded-full bg-gradient-to-r ${column.color}`}
+                          ></div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${column.color} mx-auto mb-3 flex items-center justify-center opacity-50`}>
-                      <column.icon size={20} className="text-white" />
-                    </div>
-                    <p className="text-gray-500 text-sm">No tickets</p>
-                  </div>
+                  <p className="text-sm text-gray-500">No tickets available</p>
                 )}
               </div>
             </div>
@@ -265,7 +264,9 @@ const AdminDashboard = () => {
         <div className="bg-gray-100 rounded-xl p-6 border border-gray-300">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-gray-800">Ticket Overview</h3>
-            <button className="flex items-center space-x-2 text-gray-500 hover:text-gray-700">
+            <button 
+            onClick={() => navigate('/admin/reports')}
+            className="flex items-center space-x-2 text-gray-500 hover:text-gray-700">
               <span>Export</span>
               <Download size={16} />
             </button>

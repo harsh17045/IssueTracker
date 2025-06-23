@@ -75,21 +75,28 @@ const DepartmentalAdmins = () => {
         {/* Display Departmental Admins */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           {departmentalAdmins.map((admin) => (
-            <div key={admin._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{admin.name}</h3>
-                  <p className="text-sm text-gray-500">{admin.email}</p>
-                  <p className="text-sm text-[#4B2D87] mt-2">
-                    {admin.department?.name || 'No Department'}
-                  </p>
-                  <span className={`inline-block mt-2 px-2 py-1 text-xs rounded-full ${
-                    admin.isFirstLogin 
-                      ? 'bg-yellow-100 text-yellow-800' 
-                      : 'bg-green-100 text-green-800'
-                  }`}>
-                    {admin.isFirstLogin ? 'First Login Pending' : 'Active'}
-                  </span>
+            <div key={admin._id} className="relative group">
+              {/* Decorative Blurred Blob */}
+              <div className="absolute -top-6 -left-6 w-40 h-32 bg-gradient-to-tr from-purple-200 via-blue-200 to-transparent rounded-full blur-2xl opacity-50 z-0 pointer-events-none group-hover:opacity-70 transition-all duration-300" />
+              <div className="bg-white rounded-2xl shadow-lg p-7 relative z-10 group-hover:shadow-2xl transition-all duration-200">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 flex items-center justify-center bg-purple-100 rounded-full shadow-sm">
+                    <UserCog className="text-purple-600" size={28} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900">{admin.name}</h3>
+                    <p className="text-sm text-gray-500 flex items-center gap-1"><Mail size={14} className="inline-block" /> {admin.email}</p>
+                    <span className="inline-block mt-2 px-2 py-1 text-xs rounded-full bg-gradient-to-r from-purple-400 to-blue-400 text-white font-medium shadow-sm">
+                      {admin.department?.name || 'No Department'}
+                    </span>
+                    <span className={`inline-block mt-2 ml-2 px-2 py-1 text-xs rounded-full ${
+                      admin.isFirstLogin 
+                        ? 'bg-yellow-100 text-yellow-800' 
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {admin.isFirstLogin ? 'First Login Pending' : 'Active'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

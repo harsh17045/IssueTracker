@@ -342,3 +342,30 @@ export const getAttachment = async (filename) => {
     throw error;
   }
 };
+
+export const exportTicketReportExcel = async () => {
+  try {
+    const token = getAdminToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_URL}/export-report-excel`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to generate Excel report');
+    }
+
+    // Return the blob for Excel download
+    const blob = await response.blob();
+    return blob;
+  } catch (error) {
+    console.error('Error generating Excel report:', error);
+    throw error;
+  }
+};

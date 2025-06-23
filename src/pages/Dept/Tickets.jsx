@@ -77,13 +77,13 @@ const DepartmentTickets = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending':
-        return { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' };
+        return { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300' };
       case 'in_progress':
-        return { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-200' };
+        return { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300' };
       case 'resolved':
-        return { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' };
+        return { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300' };
       case 'revoked':
-        return { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' };
+        return { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300' };
       default:
         return { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-200' };
     }
@@ -173,57 +173,57 @@ const DepartmentTickets = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl shadow-lg border border-red-200 p-4">
+        <div className="bg-blue-100 rounded-xl shadow-lg border border-blue-300 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-red-600 font-medium">Pending</p>
-              <h3 className="text-2xl font-bold text-red-800">
+              <p className="text-sm text-blue-600 font-medium">Pending</p>
+              <h3 className="text-2xl font-bold text-blue-800">
                 {tickets.filter(t => t.status === 'pending').length}
               </h3>
             </div>
-            <div className="p-2 bg-red-500 rounded-lg">
+            <div className="p-2 bg-blue-500 rounded-lg">
               <Clock className="text-white" size={20} />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl shadow-lg border border-teal-200 p-4">
+        <div className="bg-yellow-100 rounded-xl shadow-lg border border-yellow-300 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-teal-600 font-medium">In Progress</p>
-              <h3 className="text-2xl font-bold text-teal-800">
+              <p className="text-sm text-yellow-600 font-medium">In Progress</p>
+              <h3 className="text-2xl font-bold text-yellow-800">
                 {tickets.filter(t => t.status === 'in_progress').length}
               </h3>
             </div>
-            <div className="p-2 bg-teal-500 rounded-lg">
+            <div className="p-2 bg-yellow-400 rounded-lg">
               <Activity className="text-white" size={20} />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg border border-blue-200 p-4">
+        <div className="bg-green-100 rounded-xl shadow-lg border border-green-300 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-blue-600 font-medium">Resolved</p>
-              <h3 className="text-2xl font-bold text-blue-800">
+              <p className="text-sm text-green-600 font-medium">Resolved</p>
+              <h3 className="text-2xl font-bold text-green-800">
                 {tickets.filter(t => t.status === 'resolved').length}
               </h3>
             </div>
-            <div className="p-2 bg-blue-500 rounded-lg">
+            <div className="p-2 bg-green-500 rounded-lg">
               <CheckCircle2 className="text-white" size={20} />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-lg border border-green-200 p-4">
+        <div className="bg-red-100 rounded-xl shadow-lg border border-red-300 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-green-600 font-medium">Revoked</p>
-              <h3 className="text-2xl font-bold text-green-800">
+              <p className="text-sm text-red-600 font-medium">Revoked</p>
+              <h3 className="text-2xl font-bold text-red-800">
                 {tickets.filter(t => t.status === 'revoked').length}
               </h3>
             </div>
-            <div className="p-2 bg-green-500 rounded-lg">
+            <div className="p-2 bg-red-500 rounded-lg">
               <XCircle className="text-white" size={20} />
             </div>
           </div>

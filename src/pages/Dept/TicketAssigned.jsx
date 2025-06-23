@@ -1,33 +1,46 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Eye, Activity, CheckCircle2, XCircle, Ticket, User, Calendar } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, Filter, Eye, Activity, CheckCircle2, XCircle, Ticket, User, Calendar, RefreshCw, HelpCircle, Clock, AlertCircle, MoreVertical } from 'lucide-react';
 import { getDepartmentTickets } from '../../service/deptAuthService';
 import { useDeptAuth } from '../../context/DeptAuthContext';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 const TicketAssigned = () => {
-  const navigate = useNavigate();
   const { deptAdmin } = useDeptAuth();
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortField, setSortField] = useState('createdAt');
-  const [sortDirection, setSortDirection] = useState('desc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [ticketsPerPage] = useState(10);
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
+
+  // Helper to get initials for avatar
+  const getInitials = (name) => {
+    if (!name) return 'NA';
+    const parts = name.split(' ');
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
 
   useEffect(() => {
     fetchTickets();
+    // eslint-disable-next-line
   }, []);
 
   const fetchTickets = async () => {
     try {
       setLoading(true);
       const result = await getDepartmentTickets();
-      
       if (result.success) {
-        // Filter only in_progress tickets
-        const inProgressTickets = result.tickets.filter(ticket => ticket.status === 'in_progress');
+        // Only in_progress tickets
+        const inProgressTickets = (result.tickets || []).filter(ticket => ticket.status === 'in_progress')
+          .map(ticket => ({
+            ...ticket,
+            priority: ticket.priority || 'medium',
+            raised_by: {
+              ...ticket.raised_by,
+              avatar: ticket.raised_by?.avatar || getInitials(ticket.raised_by?.name)
+            }
+          }));
         setTickets(inProgressTickets);
       } else {
         toast.error(result.message || 'Failed to fetch tickets');
@@ -36,18 +49,38 @@ const TicketAssigned = () => {
           {
             _id: 1,
             title: "Network connectivity issue in Building A",
-            description: "WiFi connection is very slow in Building A",
+            description: "WiFi connection is very slow in Building A, affecting multiple departments and causing productivity issues",
             status: "in_progress",
+            priority: "high",
             createdAt: "2024-03-19T15:30:00Z",
-            raised_by: { name: "Jane Smith", email: "jane@example.com" }
+            raised_by: { name: "Jane Smith", email: "jane@example.com", avatar: "JS" }
           },
           {
             _id: 2,
             title: "Software installation request",
-            description: "Need Adobe Creative Suite installed on lab computers",
+            description: "Need Adobe Creative Suite installed on lab computers for graphic design course",
             status: "in_progress",
+            priority: "medium",
             createdAt: "2024-03-18T14:20:00Z",
-            raised_by: { name: "Mike Johnson", email: "mike@example.com" }
+            raised_by: { name: "Mike Johnson", email: "mike@example.com", avatar: "MJ" }
+          },
+          {
+            _id: 3,
+            title: "Printer maintenance required",
+            description: "Color printer in Room 205 is producing faded prints and needs servicing",
+            status: "in_progress",
+            priority: "low",
+            createdAt: "2024-03-17T10:15:00Z",
+            raised_by: { name: "Sarah Wilson", email: "sarah@example.com", avatar: "SW" }
+          },
+          {
+            _id: 4,
+            title: "Database backup error",
+            description: "Automated backup failed last night, need immediate attention to prevent data loss",
+            status: "in_progress",
+            priority: "critical",
+            createdAt: "2024-03-16T09:45:00Z",
+            raised_by: { name: "Alex Chen", email: "alex@example.com", avatar: "AC" }
           }
         ]);
       }
@@ -59,244 +92,242 @@ const TicketAssigned = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' };
-      case 'in_progress':
-        return { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-200' };
-      case 'resolved':
-        return { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' };
-      case 'revoked':
-        return { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' };
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'critical':
+        return { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' };
+      case 'high':
+        return { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500' };
+      case 'medium':
+        return { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-200', dot: 'bg-yellow-500' };
+      case 'low':
+        return { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200', dot: 'bg-green-500' };
       default:
-        return { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-200' };
+        return { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200', dot: 'bg-gray-500' };
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'pending':
-        return <Calendar size={16} />;
-      case 'in_progress':
-        return <Activity size={16} />;
-      case 'resolved':
-        return <CheckCircle2 size={16} />;
-      case 'revoked':
-        return <XCircle size={16} />;
-      default:
-        return <Ticket size={16} />;
-    }
+  const getTimeAgo = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
   };
 
-  const sortTickets = (tickets) => {
-    return [...tickets].sort((a, b) => {
-      if (sortField === 'createdAt') {
-        return sortDirection === 'desc' 
-          ? new Date(b.createdAt) - new Date(a.createdAt)
-          : new Date(a.createdAt) - new Date(b.createdAt);
-      }
-      if (sortField === 'title') {
-        return sortDirection === 'desc'
-          ? b.title.localeCompare(a.title)
-          : a.title.localeCompare(b.title);
-      }
-      if (sortField === 'status') {
-        return sortDirection === 'desc'
-          ? b.status.localeCompare(a.status)
-          : a.status.localeCompare(b.status);
-      }
-      return 0;
-    });
-  };
-
-  const filteredTickets = sortTickets(tickets.filter(ticket => {
+  const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = 
       ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (ticket.description && ticket.description.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSearch;
-  }));
-
-  // Pagination
-  const indexOfLastTicket = currentPage * ticketsPerPage;
-  const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
-  const currentTickets = filteredTickets.slice(indexOfFirstTicket, indexOfLastTicket);
-  const totalPages = Math.ceil(filteredTickets.length / ticketsPerPage);
-
-  const handleTicketClick = (ticketId) => {
-    navigate(`/dept/tickets/${ticketId}`);
-  };
-
-  const handleSort = (field) => {
-    setSortDirection(sortField === field && sortDirection === 'asc' ? 'desc' : 'asc');
-    setSortField(field);
-  };
+  });
 
   const handleRefresh = () => {
     fetchTickets();
-    toast.success('Tickets refreshed successfully');
+  };
+
+  const handleViewTicket = (ticketId) => {
+    navigate(`/dept/tickets/${ticketId}`);
+  };
+
+  const TicketCard = ({ ticket }) => {
+    const priorityColors = getPriorityColor(ticket.priority);
+    return (
+      <div className="group bg-white rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer overflow-hidden">
+        {/* Priority indicator bar */}
+        <div className={`h-1 ${priorityColors.dot}`}></div>
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                {ticket.title}
+              </h3>
+              <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                {ticket.description}
+              </p>
+            </div>
+            <button className="ml-2 p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all">
+              <MoreVertical size={16} className="text-gray-400" />
+            </button>
+          </div>
+          {/* Priority and Status */}
+          <div className="flex items-center gap-3 mb-4">
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${priorityColors.bg} ${priorityColors.text} ${priorityColors.border}`}>
+              <div className={`w-2 h-2 rounded-full ${priorityColors.dot}`}></div>
+              {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+              <Activity size={12} />
+              In Progress
+            </span>
+          </div>
+          {/* User info */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                {ticket.raised_by?.avatar}
+              </div> */}
+              <div>
+                <p className="text-sm font-medium text-gray-900">{ticket.raised_by?.name}</p>
+                <p className="text-xs text-gray-500">{ticket.raised_by?.email}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                <Clock size={12} />
+                {getTimeAgo(ticket.createdAt)}
+              </div>
+              <button className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors font-medium" onClick={() => handleViewTicket(ticket._id)}>
+                <Eye size={14} />
+                View
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Assigned Tickets</h1>
-          <p className="text-gray-600">
-            {deptAdmin?.department || 'Department'} - Currently working on {tickets.length} tickets
-          </p>
-        </div>
-        <button
-          onClick={handleRefresh}
-          className="px-4 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg hover:from-teal-600 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-        >
-          Refresh
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Animated background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-indigo-400/10 to-blue-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      {/* Stats Card */}
-      <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl shadow-lg border border-teal-200 p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-teal-600 font-medium">Tickets In Progress</p>
-            <h3 className="text-3xl font-bold text-teal-800 mt-1">{tickets.length}</h3>
-            <p className="text-sm text-teal-600 mt-1">Currently being worked on</p>
-          </div>
-          <div className="p-3 bg-teal-500 rounded-xl shadow-lg">
-            <Activity className="text-white" size={24} />
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-6">
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search assigned tickets..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Activity className="text-teal-500" size={20} />
-            <span className="text-sm font-medium text-teal-600">In Progress Only</span>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                Assigned Tickets
+              </h1>
+              <p className="text-lg text-gray-600">
+                {deptAdmin?.department} • <span className="font-semibold text-blue-600">{tickets.length}</span> active tickets
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleRefresh}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+              >
+                <RefreshCw size={18} />
+                Refresh
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Tickets Table */}
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th 
-                  className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => handleSort('title')}
+        {/* Search and Filters */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+            <div className="relative flex-1 max-w-lg">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Search tickets by title or description..."
+                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                <button
+                  onClick={() => setViewMode('cards')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    viewMode === 'cards' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
-                  <div className="flex items-center gap-2">
-                    Title
-                    {sortField === 'title' && (
-                      <span className="text-teal-500">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Raised By</th>
-                <th 
-                  className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => handleSort('status')}
+                  Cards
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    viewMode === 'table' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
-                  <div className="flex items-center gap-2">
-                    Status
-                    {sortField === 'status' && (
-                      <span className="text-teal-500">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </div>
-                </th>
-                <th 
-                  className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => handleSort('createdAt')}
-                >
-                  <div className="flex items-center gap-2">
-                    Assigned
-                    {sortField === 'createdAt' && (
-                      <span className="text-teal-500">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
+                  Table
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tickets Display */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="text-gray-600 font-medium">Loading tickets...</span>
+            </div>
+          </div>
+        ) : filteredTickets.length === 0 ? (
+          <div className="text-center py-20">
+            <Activity className="text-gray-300 mx-auto mb-4" size={64} />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No tickets found</h3>
+            <p className="text-gray-500">
+              {searchQuery ? 'Try adjusting your search criteria' : 'Tickets will appear here when assigned to your department'}
+            </p>
+          </div>
+        ) : viewMode === 'cards' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredTickets.map((ticket) => (
+              <TicketCard key={ticket._id} ticket={ticket} />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-x-auto mt-8">
+            <table className="w-full min-w-[900px]">
+              <thead className="bg-gray-50 sticky top-0 z-20">
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center">
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
-                      <span className="ml-2 text-gray-500">Loading assigned tickets...</span>
-                    </div>
-                  </td>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Title</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Description</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Raised By</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Priority</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Created</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Actions</th>
                 </tr>
-              ) : currentTickets.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center">
-                      <Activity className="text-gray-300 mb-2" size={48} />
-                      <p className="text-lg font-medium text-gray-500">No tickets assigned</p>
-                      <p className="text-sm text-gray-400">
-                        {searchQuery ? 'Try adjusting your search' : 'Tickets will appear here when they are assigned to your department'}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                currentTickets.map((ticket) => {
-                  const statusColors = getStatusColor(ticket.status);
+              </thead>
+              <tbody>
+                {filteredTickets.map((ticket, idx) => {
+                  const priorityColors = getPriorityColor(ticket.priority);
                   return (
-                    <tr 
-                      key={ticket._id} 
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => handleTicketClick(ticket._id)}
+                    <tr
+                      key={ticket._id}
+                      className={`transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 border-b border-gray-100`}
                     >
+                      <td className="px-6 py-4 font-semibold text-gray-900 max-w-xs truncate">{ticket.title}</td>
+                      <td className="px-6 py-4 text-gray-500 max-w-xs truncate">{ticket.description}</td>
                       <td className="px-6 py-4">
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900">{ticket.title}</h3>
-                          {ticket.description && (
-                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                              {ticket.description}
-                            </p>
-                          )}
-                        </div>
+                        <div className="text-sm text-gray-900 font-medium">{ticket.raised_by?.name || 'N/A'}</div>
+                        <div className="text-xs text-gray-400">{ticket.raised_by?.email || ''}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
-                          {ticket.raised_by?.name || 'N/A'}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {ticket.raised_by?.email || ''}
-                        </div>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${priorityColors.bg} ${priorityColors.text} ${priorityColors.border}`}> 
+                          <div className={`w-2 h-2 rounded-full ${priorityColors.dot}`}></div>
+                          {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
-                          {getStatusIcon(ticket.status)}
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                          <Activity size={12} />
                           In Progress
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {new Date(ticket.createdAt).toLocaleDateString()}
-                      </td>
+                      <td className="px-6 py-4 text-xs text-gray-500">{new Date(ticket.createdAt).toLocaleDateString()}</td>
                       <td className="px-6 py-4">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleTicketClick(ticket._id);
-                          }}
-                          className="inline-flex items-center gap-1 px-3 py-1 text-sm text-teal-600 hover:text-teal-800 hover:bg-teal-50 rounded-lg transition-colors"
+                          onClick={() => handleViewTicket(ticket._id)}
+                          className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors font-semibold"
                         >
                           <Eye size={16} />
                           View
@@ -304,39 +335,9 @@ const TicketAssigned = () => {
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-500">
-                Showing {indexOfFirstTicket + 1} to {Math.min(indexOfLastTicket, filteredTickets.length)} of {filteredTickets.length} assigned tickets
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <span className="px-3 py-1 text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -344,4 +345,4 @@ const TicketAssigned = () => {
   );
 };
 
-export default TicketAssigned; 
+export default TicketAssigned;

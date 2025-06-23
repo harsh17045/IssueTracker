@@ -32,30 +32,30 @@ export default function DepartmentDashboard() {
     { 
       name: 'Pending', 
       value: stats.pendingTickets, 
-      color: '#FF6B6B',
+      color: '#3B82F6',
       fill: 'url(#pendingGradient)',
-      stroke: '#FF5252'
+      stroke: '#2563EB'
     },
     { 
       name: 'In Progress', 
       value: stats.inProgressTickets, 
-      color: '#4ECDC4',
+      color: '#F59E42',
       fill: 'url(#inProgressGradient)',
-      stroke: '#26A69A'
+      stroke: '#D97706'
     },
     { 
       name: 'Resolved', 
       value: stats.resolvedTickets, 
-      color: '#45B7D1',
+      color: '#22C55E',
       fill: 'url(#resolvedGradient)',
-      stroke: '#1976D2'
+      stroke: '#16A34A'
     },
     { 
       name: 'Revoked', 
       value: stats.revokedTickets, 
-      color: '#96CEB4',
+      color: '#EF4444',
       fill: 'url(#revokedGradient)',
-      stroke: '#66BB6A'
+      stroke: '#B91C1C'
     }
   ];
 
@@ -64,30 +64,30 @@ export default function DepartmentDashboard() {
     { 
       status: 'Pending', 
       count: stats.pendingTickets, 
-      color: '#FF6B6B',
+      color: '#3B82F6',
       fill: 'url(#pendingBarGradient)',
-      stroke: '#FF5252'
+      stroke: '#2563EB'
     },
     { 
       status: 'In Progress', 
       count: stats.inProgressTickets, 
-      color: '#4ECDC4',
+      color: '#F59E42',
       fill: 'url(#inProgressBarGradient)',
-      stroke: '#26A69A'
+      stroke: '#D97706'
     },
     { 
       status: 'Resolved', 
       count: stats.resolvedTickets, 
-      color: '#45B7D1',
+      color: '#22C55E',
       fill: 'url(#resolvedBarGradient)',
-      stroke: '#1976D2'
+      stroke: '#16A34A'
     },
     { 
       status: 'Revoked', 
       count: stats.revokedTickets, 
-      color: '#96CEB4',
+      color: '#EF4444',
       fill: 'url(#revokedBarGradient)',
-      stroke: '#66BB6A'
+      stroke: '#B91C1C'
     }
   ];
 
@@ -217,61 +217,61 @@ export default function DepartmentDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg border border-blue-200 p-6 transform hover:scale-105 transition-transform duration-200">
+        <div className="bg-purple-100 rounded-xl shadow-lg border border-purple-300 p-6 transform hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-blue-600 font-medium">Total Tickets</p>
-              <h3 className="text-3xl font-bold text-blue-800 mt-1">{stats.totalTickets}</h3>
+              <p className="text-sm text-purple-600 font-medium">Total Tickets</p>
+              <h3 className="text-3xl font-bold text-purple-800 mt-1">{stats.totalTickets}</h3>
             </div>
-            <div className="p-3 bg-blue-500 rounded-xl shadow-lg">
+            <div className="p-3 bg-purple-500 rounded-xl shadow-lg">
               <Ticket className="text-white" size={24} />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl shadow-lg border border-red-200 p-6 transform hover:scale-105 transition-transform duration-200">
+        <div className="bg-blue-100 rounded-xl shadow-lg border border-blue-300 p-6 transform hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-red-600 font-medium">Pending Tickets</p>
-              <h3 className="text-3xl font-bold text-red-800 mt-1">{stats.pendingTickets}</h3>
+              <p className="text-sm text-blue-600 font-medium">Pending Tickets</p>
+              <h3 className="text-3xl font-bold text-blue-800 mt-1">{stats.pendingTickets}</h3>
             </div>
-            <div className="p-3 bg-red-500 rounded-xl shadow-lg">
+            <div className="p-3 bg-blue-500 rounded-xl shadow-lg">
               <Clock className="text-white" size={24} />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl shadow-lg border border-teal-200 p-6 transform hover:scale-105 transition-transform duration-200">
+        <div className="bg-yellow-100 rounded-xl shadow-lg border border-yellow-300 p-6 transform hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-teal-600 font-medium">In Progress</p>
-              <h3 className="text-3xl font-bold text-teal-800 mt-1">{stats.inProgressTickets}</h3>
+              <p className="text-sm text-yellow-600 font-medium">In Progress</p>
+              <h3 className="text-3xl font-bold text-yellow-800 mt-1">{stats.inProgressTickets}</h3>
             </div>
-            <div className="p-3 bg-teal-500 rounded-xl shadow-lg">
+            <div className="p-3 bg-yellow-400 rounded-xl shadow-lg">
               <Activity className="text-white" size={24} />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg border border-blue-200 p-6 transform hover:scale-105 transition-transform duration-200">
+        <div className="bg-green-100 rounded-xl shadow-lg border border-green-300 p-6 transform hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-blue-600 font-medium">Resolved Tickets</p>
-              <h3 className="text-3xl font-bold text-blue-800 mt-1">{stats.resolvedTickets}</h3>
+              <p className="text-sm text-green-600 font-medium">Resolved Tickets</p>
+              <h3 className="text-3xl font-bold text-green-800 mt-1">{stats.resolvedTickets}</h3>
             </div>
-            <div className="p-3 bg-blue-500 rounded-xl shadow-lg">
+            <div className="p-3 bg-green-500 rounded-xl shadow-lg">
               <CheckCircle2 className="text-white" size={24} />
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-lg border border-green-200 p-6 transform hover:scale-105 transition-transform duration-200">
+        <div className="bg-red-100 rounded-xl shadow-lg border border-red-300 p-6 transform hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-green-600 font-medium">Revoked Tickets</p>
-              <h3 className="text-3xl font-bold text-green-800 mt-1">{stats.revokedTickets}</h3>
+              <p className="text-sm text-red-600 font-medium">Revoked Tickets</p>
+              <h3 className="text-3xl font-bold text-red-800 mt-1">{stats.revokedTickets}</h3>
             </div>
-            <div className="p-3 bg-green-500 rounded-xl shadow-lg">
+            <div className="p-3 bg-red-500 rounded-xl shadow-lg">
               <XCircle className="text-white" size={24} />
             </div>
           </div>
@@ -312,12 +312,12 @@ export default function DepartmentDashboard() {
                     <td className="py-4 px-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                         ticket.status === 'pending' 
-                          ? 'bg-red-100 text-red-800 border border-red-200'
+                          ? 'bg-blue-100 text-blue-800 border border-blue-300'
                           : ticket.status === 'in_progress'
-                          ? 'bg-teal-100 text-teal-800 border border-teal-200'
+                          ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
                           : ticket.status === 'resolved'
-                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                          : 'bg-green-100 text-green-800 border border-green-200'
+                          ? 'bg-green-100 text-green-800 border border-green-300'
+                          : 'bg-red-100 text-red-800 border border-red-300'
                       }`}>
                         {ticket.status === 'in_progress' ? 'In Progress' : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
                       </span>
@@ -360,20 +360,20 @@ export default function DepartmentDashboard() {
             <PieChart>
               <defs>
                 <linearGradient id="pendingGradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#FF6B6B" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#FF5252" stopOpacity={1} />
+                  <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#2563EB" stopOpacity={1} />
                 </linearGradient>
                 <linearGradient id="inProgressGradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#4ECDC4" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#26A69A" stopOpacity={1} />
+                  <stop offset="0%" stopColor="#F59E42" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#D97706" stopOpacity={1} />
                 </linearGradient>
                 <linearGradient id="resolvedGradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#45B7D1" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#1976D2" stopOpacity={1} />
+                  <stop offset="0%" stopColor="#22C55E" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#16A34A" stopOpacity={1} />
                 </linearGradient>
                 <linearGradient id="revokedGradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#96CEB4" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#66BB6A" stopOpacity={1} />
+                  <stop offset="0%" stopColor="#EF4444" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#B91C1C" stopOpacity={1} />
                 </linearGradient>
               </defs>
               <Pie
@@ -410,20 +410,20 @@ export default function DepartmentDashboard() {
             <BarChart data={statusData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <defs>
                 <linearGradient id="pendingBarGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#FF6B6B" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#FF5252" stopOpacity={0.6} />
+                  <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#2563EB" stopOpacity={0.6} />
                 </linearGradient>
                 <linearGradient id="inProgressBarGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#4ECDC4" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#26A69A" stopOpacity={0.6} />
+                  <stop offset="0%" stopColor="#F59E42" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#D97706" stopOpacity={0.6} />
                 </linearGradient>
                 <linearGradient id="resolvedBarGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#45B7D1" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#1976D2" stopOpacity={0.6} />
+                  <stop offset="0%" stopColor="#22C55E" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#16A34A" stopOpacity={0.6} />
                 </linearGradient>
                 <linearGradient id="revokedBarGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#96CEB4" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#66BB6A" stopOpacity={0.6} />
+                  <stop offset="0%" stopColor="#EF4444" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="#B91C1C" stopOpacity={0.6} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
