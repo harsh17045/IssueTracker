@@ -1,19 +1,14 @@
-import { Bug, Edit2, X, Check, ChevronDown, ChevronUp, CalendarIcon, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bug, Edit2, X, Check, ChevronDown, ChevronUp, CalendarIcon, Filter, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getMyTickets, updateTicket, getAllDepartments, revokeTicket, filterTickets } from '../services/authService';
+import { getMyTickets, getAllDepartments, revokeTicket, filterTickets } from '../services/authService';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const MyTickets = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingTicket, setEditingTicket] = useState(null);
-  const [editedData, setEditedData] = useState({
-    title: '',
-    description: '',
-    to_department: ''
-  });
-  const [expandedTicket, setExpandedTicket] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [filterParams, setFilterParams] = useState({
     status: '',
@@ -23,7 +18,9 @@ const MyTickets = () => {
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1); // State for current page
+  const [searchTerm, setSearchTerm] = useState('');
   const ticketsPerPage = 5; // Maximum 5 tickets per page
+  const navigate = useNavigate();
 
   const statusOptions = [
     { value: '', label: 'All Status' },
@@ -78,54 +75,6 @@ const MyTickets = () => {
 
   const handleEditClick = (ticket) => {
     setEditingTicket(ticket);
-    setEditedData({
-      title: ticket.title,
-      description: ticket.description || '',
-      to_department: ticket.to_department?.name || ''
-    });
-  };
-
-  const handleSaveEdit = async (ticketId) => {
-    try {
-      if (!editedData.title || !editedData.to_department) {
-        toast.error('Title and department are required');
-        return;
-      }
-
-      const updatedTicket = await updateTicket(ticketId, editedData);
-      
-      const department = departments.find(dept => dept.name === editedData.to_department);
-      
-      const updatedTickets = tickets.map(ticket => {
-        if (ticket._id === ticketId) {
-          return {
-            ...updatedTicket,
-            to_department: {
-              id: department ? (department.id || department._id) : null,
-              name: editedData.to_department
-            }
-          };
-        }
-        return ticket;
-      });
-
-      setTickets(updatedTickets);
-      setEditingTicket(null);
-      setEditedData({ title: '', description: '', to_department: '' });
-      toast.success('Ticket updated successfully');
-    } catch (error) {
-      toast.error('Failed to update ticket');
-      console.error('Update error:', error);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingTicket(null);
-    setEditedData({ title: '', description: '', to_department: '' });
-  };
-
-  const toggleTicketExpand = (ticketId) => {
-    setExpandedTicket(expandedTicket === ticketId ? null : ticketId);
   };
 
   const handleRevokeTicket = async (ticketId) => {
@@ -160,29 +109,22 @@ const MyTickets = () => {
     }
   };
 
-  const statusColors = {
-    'pending': 'bg-blue-100 text-blue-800',
-    'in_progress': 'bg-purple-100 text-purple-800',
-    'resolved': 'bg-green-100 text-green-800',
-    'revoked': 'bg-yellow-100 text-yellow-800'
-  };
-
-  const getDepartmentName = (deptId) => {
-    const department = departments.find(dept => dept._id === deptId || dept.id === deptId);
-    return department?.name || 'Unknown Department';
-  };
-
   // Pagination logic
   const totalPages = Math.ceil(tickets.length / ticketsPerPage);
   const startIndex = (currentPage - 1) * ticketsPerPage;
   const endIndex = startIndex + ticketsPerPage;
-  const currentTickets = tickets.slice(startIndex, endIndex);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
+
+  // Filter tickets by search term
+  const filteredTickets = tickets.filter(ticket =>
+    ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ticket.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -204,9 +146,17 @@ const MyTickets = () => {
       <div className="bg-white rounded-2xl shadow-sm border">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Your Tickets</h3>
-            
-            <div className="relative">
+            <div className="relative w-full max-w-md">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4B2D87] bg-gray-50"
+                placeholder="Search tickets by title or description..."
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            </div>
+            <div className="relative ml-4">
               <button
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 className={`px-4 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
@@ -326,153 +276,73 @@ const MyTickets = () => {
             <div className="text-center py-10">
               <p className="text-gray-500">Loading tickets...</p>
             </div>
-          ) : currentTickets.length === 0 ? (
+          ) : filteredTickets.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-gray-500">No tickets found matching your filters</p>
             </div>
           ) : (
-            currentTickets.map((ticket, index) => (
-              <div 
-                key={ticket._id} 
-                className="bg-white rounded-lg border border-gray-200 hover:border-[#4B2D87] transition-colors overflow-hidden"
+            filteredTickets.slice(startIndex, endIndex).map((ticket) => (
+              <div
+                key={ticket._id}
+                className="bg-white rounded-xl border border-gray-100 shadow-md hover:shadow-lg transition p-5 mb-4 flex flex-col md:flex-row md:items-center md:justify-between cursor-pointer"
+                onClick={() => navigate(`/my-tickets/${ticket._id}`)}
               >
-                <div 
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50"
-                  onClick={() => !editingTicket && toggleTicketExpand(ticket._id)}
-                >
-                  <div className="flex items-center space-x-4 flex-1">
-                    <div className="flex items-center space-x-2">
-                      <p className="text-sm font-medium text-gray-900">{startIndex + index + 1}.</p>
-                      {!editingTicket && (
-                        expandedTicket === ticket._id ? (
-                          <ChevronUp size={16} className="text-gray-400" />
-                        ) : (
-                          <ChevronDown size={16} className="text-gray-400" />
-                        )
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                        {ticket.to_department?.name || 
-                         getDepartmentName(ticket.to_department?.id) ||
-                         'Unknown Department'}
-                      </p>
-                      {editingTicket?._id === ticket._id ? (
-                        <div className="space-y-3 mt-1">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="text"
-                              value={editedData.title}
-                              onChange={(e) => setEditedData(prev => ({ ...prev, title: e.target.value }))}
-                              className="flex-1 text-xs px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-[#4B2D87] focus:border-transparent"
-                              placeholder="Issue title"
-                            />
-                          </div>
-                          
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => handleSaveEdit(ticket._id)}
-                              className="p-1 rounded-full bg-green-100 text-green-600 hover:bg-green-200"
-                            >
-                              <Check size={14} />
-                            </button>
-                            <button
-                              onClick={handleCancelEdit}
-                              className="p-1 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-2">
-                          <p className="text-xs text-gray-500">Issue Regarding {ticket.title}</p>
-                          <button
-                            onClick={() => handleEditClick(ticket)}
-                            className="p-1 rounded-full hover:bg-gray-100"
-                          >
-                            <Edit2 size={14} className="text-gray-400 hover:text-gray-600" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    {ticket.status === 'pending' && !editingTicket && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRevokeTicket(ticket._id);
-                        }}
-                        className="px-3 py-1 text-xs font-medium text-red-600 bg-red-100 rounded-full hover:bg-red-200 transition-colors"
-                      >
-                        Revoke
-                      </button>
-                    )}
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      statusColors[ticket.status] || 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {ticket.status || 'Unknown'}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg font-bold text-[#4B2D87]">{ticket.title}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ml-2
+                      ${ticket.status === 'pending' ? 'bg-blue-100 text-blue-700' :
+                        ticket.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
+                        ticket.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                        'bg-red-100 text-red-700'}`}>
+                      {ticket.status.replace('_', ' ').toUpperCase()}
                     </span>
-                    <p className="text-xs text-gray-500 min-w-[120px] text-right">
-                      {format(new Date(ticket.createdAt), 'MMM dd, yyyy - h:mm a')}
-                    </p>
+                    {['high', 'low'].includes(ticket.priority) && (
+                      <span className={`ml-2 px-2 py-1 rounded-full text-xs font-bold
+                        ${ticket.priority === 'high' ? 'bg-red-100 text-red-700' :
+                          'bg-gray-100 text-gray-700'}`}>
+                        {ticket.priority}
+                      </span>
+                    )}
                   </div>
+                  <div className="text-xs text-gray-500 mb-1">
+                    {ticket.to_department?.name || 'Unknown Department'} &bull; {format(new Date(ticket.createdAt), 'MMM dd, yyyy - h:mm a')}
+                  </div>
+                  <div className="text-sm text-gray-700 line-clamp-2">{ticket.description}</div>
                 </div>
-
-                {(expandedTicket === ticket._id && !editingTicket) && (
-                  <div className="px-4 pb-4 border-t border-gray-100">
-                    <div className="mt-3">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Description</h4>
-                      <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                        {ticket.description || 'No description provided'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {editingTicket?._id === ticket._id && (
-                  <div className="p-4 border-t border-gray-100">
-                    <div className="flex flex-col space-y-4">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Description
-                        </label>
-                        <textarea
-                          value={editedData.description}
-                          onChange={(e) => setEditedData({ ...editedData, description: e.target.value })}
-                          className="w-full text-xs px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4B2D87] focus:border-transparent"
-                          rows="2"
-                          placeholder="Describe the issue"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Assign To Department
-                        </label>
-                        <div className="relative">
-                          <select
-                            value={editedData.to_department}
-                            onChange={(e) => setEditedData({ ...editedData, to_department: e.target.value })}
-                            className="w-full text-xs px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-[#4B2D87] focus:border-transparent appearance-none"
-                          >
-                            <option value="">Select a department</option>
-                            {departments
-                              .filter(dept => dept.canResolve)
-                              .map((dept) => (
-                                <option key={dept._id || dept.id} value={dept.name}>
-                                  {dept.name}
-                                </option>
-                              ))}
-                          </select>
-                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <ChevronDown className="w-4 h-4 text-gray-400" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 mt-3 md:mt-0">
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      navigate(`/my-tickets/${ticket._id}`);
+                    }}
+                    className="p-2 rounded-full hover:bg-gray-100"
+                    title="View"
+                  >
+                    <ChevronRight size={18} className="text-[#4B2D87]" />
+                  </button>
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleEditClick(ticket);
+                    }}
+                    className="p-2 rounded-full hover:bg-gray-100"
+                    title="Edit"
+                  >
+                    <Edit2 size={16} className="text-gray-400 hover:text-gray-600" />
+                  </button>
+                  {ticket.status === 'pending' && !editingTicket && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleRevokeTicket(ticket._id);
+                      }}
+                      className="px-3 py-1 text-xs font-medium text-red-600 bg-red-100 rounded-full hover:bg-red-200 transition"
+                    >
+                      Revoke
+                    </button>
+                  )}
+                </div>
               </div>
             ))
           )}
@@ -488,9 +358,7 @@ const MyTickets = () => {
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className={`p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 ${
-                  currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <ChevronLeft size={16} />
               </button>
@@ -512,9 +380,7 @@ const MyTickets = () => {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className={`p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 ${
-                  currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`p-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <ChevronRight size={16} />
               </button>

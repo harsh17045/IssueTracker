@@ -12,6 +12,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Profile from './components/Profile';
 import ChangePassword from './components/ChangePassword';
+import TicketDetail from './components/TicketDetail';
 
 const App = () => {
   return (
@@ -35,6 +36,7 @@ const App = () => {
             <Route index element={<HomePage />} />
             <Route path="raise-ticket" element={<RaiseTicket />} />
             <Route path="my-tickets" element={<MyTicket />} />
+            <Route path="my-tickets/:ticketId" element={<TicketDetail />} />
             <Route path="profile" element={<Profile />} />
             <Route path="change-password" element={<ChangePassword />} />
           </Route>

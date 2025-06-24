@@ -118,9 +118,9 @@ export const getMyTickets = async () => {
         'Authorization': `Bearer ${token}`
       }
     });
-
-    const data = await response.json();
     
+    const data = await response.json();
+    console.log(data);
     if (!response.ok) {
       throw new Error(data.message || 'Failed to fetch tickets');
     }
@@ -128,15 +128,8 @@ export const getMyTickets = async () => {
     // Check if data is an array or has a tickets property
     const tickets = Array.isArray(data) ? data : data.tickets || [];
     
-    // Transform tickets to ensure consistent structure
-    return tickets.map(ticket => ({
-      _id: ticket._id,
-      title: ticket.title || '',
-      description: ticket.description || '',
-      status: ticket.status || 'pending', // Default to pending for new tickets
-      to_department: ticket.to_department || { id: '', name: 'Unknown Department' },
-      createdAt: ticket.createdAt || new Date().toISOString()
-    }));
+    // Return the full ticket object as received from the backend
+    return tickets;
 
   } catch (error) {
     console.error('Error fetching tickets:', error);
@@ -280,27 +273,29 @@ export const resetPassword = async (email, otp, newPassword) => {
   }
 };
 
-export const updateTicket = async (ticketId, updateData) => {
+export const updateTicket = async (ticketId, updateData, isMultipart = false) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${API_URL}/update-ticket/${ticketId}`, {
+    const options = {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        title: updateData.title,
-        description: updateData.description,
-        to_department: updateData.to_department
-      }),
-    });
+    };
 
+    if (isMultipart) {
+      // For FormData (with file upload), don't set Content-Type
+      options.body = updateData;
+    } else {
+      options.headers["Content-Type"] = "application/json";
+      options.body = JSON.stringify(updateData);
+    }
+
+    const response = await fetch(`${API_URL}/update-ticket/${ticketId}`, options);
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.message || "Failed to update ticket");
     }
-
     return data.ticket;
   } catch (error) {
     console.error("Error updating ticket:", error);
@@ -420,6 +415,47 @@ export const getAllBuildings = async () => {
     return data.buildings;
   } catch (error) {
     console.error('Error fetching buildings:', error);
+    throw error;
+  }
+};
+
+export const getAttachment = async (filename) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/get-attachment/${filename}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to fetch attachment');
+    }
+    return response;
+  } catch (error) {
+    console.error('Error fetching attachment:', error);
+    throw error;
+  }
+};
+
+export const commentOnTicket = async (ticketId, commentText) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_URL}/comment-ticket/${ticketId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ commentText }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to add comment");
+    }
+    return data.comments;
+  } catch (error) {
+    console.error("Error adding comment:", error);
     throw error;
   }
 };
