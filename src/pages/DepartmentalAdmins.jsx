@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserCog, Search, Plus, Mail } from 'lucide-react';
-import { createDepartmentalAdmin, getAllDepartments, getAllDepartmentalAdmins } from '../service/adminAuthService';
+import { createDepartmentalAdmin, getAllDepartments, getAllDepartmentalAdmins, getAvailableNetworkEngineerFloors } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
 
 const DepartmentalAdmins = () => {
@@ -13,6 +13,9 @@ const DepartmentalAdmins = () => {
     email: '',
     department: ''
   });
+  const [availableAssignments, setAvailableAssignments] = useState([]);
+  const [selectedBuilding, setSelectedBuilding] = useState('');
+  const [selectedFloor, setSelectedFloor] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -38,13 +41,52 @@ const DepartmentalAdmins = () => {
     }
   };
 
+  const handleDepartmentChange = async (e) => {
+    const value = e.target.value;
+    setFormData(prev => ({ ...prev, department: value }));
+    if (value.toLowerCase().includes('network engineer')) {
+      try {
+        const assignments = await getAvailableNetworkEngineerFloors();
+        setAvailableAssignments(assignments);
+        setSelectedBuilding('');
+        setSelectedFloor('');
+      } catch {
+        toast.error('Failed to fetch available buildings/floors');
+        setAvailableAssignments([]);
+      }
+    } else {
+      setAvailableAssignments([]);
+      setSelectedBuilding('');
+      setSelectedFloor('');
+    }
+  };
+
+  const handleBuildingChange = (e) => {
+    setSelectedBuilding(e.target.value);
+    setSelectedFloor('');
+  };
+
+  const handleFloorChange = (e) => {
+    setSelectedFloor(e.target.value);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await createDepartmentalAdmin(formData);
+      let submitData = { ...formData };
+      if (formData.department.toLowerCase().includes('network engineer')) {
+        const buildingObj = availableAssignments.find(b => b.buildingId === selectedBuilding);
+        submitData.building = buildingObj ? buildingObj.buildingName : '';
+        submitData.floor = selectedFloor;
+      }
+      console.log(submitData);
+      await createDepartmentalAdmin(submitData);
       toast.success('Departmental admin created successfully');
       setShowAddModal(false);
       setFormData({ name: '', email: '', department: '' });
+      setAvailableAssignments([]);
+      setSelectedBuilding('');
+      setSelectedFloor('');
       fetchData(); // Refresh the list after adding
     } catch (error) {
       toast.error(error.message || 'Failed to create departmental admin');
@@ -152,7 +194,7 @@ const DepartmentalAdmins = () => {
                   </label>
                   <select
                     value={formData.department}
-                    onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                    onChange={handleDepartmentChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4B2D87] focus:border-transparent"
                     required
                   >
@@ -164,6 +206,41 @@ const DepartmentalAdmins = () => {
                     ))}
                   </select>
                 </div>
+
+                {/* Show building/floor dropdowns only for Network Engineer */}
+                {formData.department.toLowerCase().includes('network engineer') && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Building</label>
+                      <select
+                        value={selectedBuilding}
+                        onChange={handleBuildingChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4B2D87] focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select Building</option>
+                        {availableAssignments.map((b) => (
+                          <option key={b.buildingId} value={b.buildingId}>{b.buildingName}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Floor</label>
+                      <select
+                        value={selectedFloor}
+                        onChange={handleFloorChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4B2D87] focus:border-transparent"
+                        required
+                        disabled={!selectedBuilding}
+                      >
+                        <option value="">Select Floor</option>
+                        {availableAssignments.find(b => b.buildingId === selectedBuilding)?.availableFloors.map(floor => (
+                          <option key={floor} value={floor}>{floor}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex justify-end space-x-3 mt-6">
                   <button

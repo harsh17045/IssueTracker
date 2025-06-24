@@ -6,9 +6,6 @@ import { useState } from 'react';
 const DepartmentLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  console.log('DepartmentLayout rendered');
-  console.log('isSidebarOpen:', isSidebarOpen);
-
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}

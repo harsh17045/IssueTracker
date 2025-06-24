@@ -369,3 +369,60 @@ export const exportTicketReportExcel = async () => {
     throw error;
   }
 };
+
+export const updateBuilding = async (id, buildingData) => {
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) throw new Error('No authentication token found');
+
+    // Format the data to match backend expectations (optional, but keeps it consistent)
+    const formattedData = {
+      name: buildingData.name,
+      floors: buildingData.floors.map((floor) => ({
+        floor: floor.floor,
+        labs: Array.isArray(floor.labs) ? floor.labs : floor.labs.split(',').map(lab => lab.trim()).filter(Boolean)
+      }))
+    };
+
+    const response = await fetch(`${API_URL}/update-building/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(formattedData)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to update building');
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error updating building:", error);
+    return {
+      success: false,
+      message: error.message || "An error occurred.",
+    };
+  }
+};
+
+export const getAvailableNetworkEngineerFloors = async () => {
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (!token) throw new Error('No authentication token found');
+    const response = await fetch('http://localhost:5000/api/admin/available-network-engineer-floors', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to fetch available floors');
+    return data.availableAssignments || [];
+  } catch (error) {
+    console.error('Error fetching available network engineer floors:', error);
+    throw error;
+  }
+};

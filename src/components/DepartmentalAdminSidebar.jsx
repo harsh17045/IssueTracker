@@ -52,7 +52,6 @@ const DepartmentAdminSidebar = ({ isOpen, onClose }) => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dept/dashboard' },
-    { id: 'employees', label: 'Department Employees', icon: Users, path: '/dept/employees' },
     { id: 'tickets', label: 'Department Tickets', icon: Bug, path: '/dept/tickets' },
     { id: 'ticket-assigned', label: 'Ticket Assigned', icon: UserCheck, path: '/dept/ticket-assigned' },
     { id: 'reports', label: 'Department Reports', icon: BarChart3, path: '/dept/reports' },

@@ -3,6 +3,7 @@ import { Plus, Search, Edit2, Trash2, Building2, AlertCircle } from 'lucide-reac
 import { getAllBuildings } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
 import AddBuildingModal from '../components/AddBuildingModal';
+import EditBuildingModal from '../components/EditBuildingModal';
 // import { div } from 'framer-motion/client';
 
 const Buildings = () => {
@@ -10,6 +11,8 @@ const Buildings = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const buildingsPerPage = 8;
 
@@ -45,9 +48,20 @@ const Buildings = () => {
     setCurrentPage(pageNumber);
   };
 
+  const handleEditClick = (building) => {
+    setSelectedBuilding(building);
+    setShowEditModal(true);
+  };
+
   const handleAddBuildingSuccess = () => {
     setShowAddModal(false);
     fetchBuildings(); // Refresh the buildings list
+  };
+
+  const handleUpdateBuildingSuccess = () => {
+    setShowEditModal(false);
+    setSelectedBuilding(null);
+    fetchBuildings();
   };
 
   if (loading) {
@@ -59,7 +73,7 @@ const Buildings = () => {
   }
 
   return (
-    <div>
+    <div className="relative min-h-screen">
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Buildings</h1>
@@ -101,7 +115,7 @@ const Buildings = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                      // onClick={() => handleEdit(building)}
+                      onClick={() => handleEditClick(building)}
                     >
                       <Edit2 size={16} className="text-gray-500" />
                     </button>
@@ -183,7 +197,7 @@ const Buildings = () => {
         )}
       </div>
 
-      {/* Add Building Modal */}
+      {/* Modals rendered outside the main content for proper blur */}
       {showAddModal && (
         <AddBuildingModal
           isOpen={showAddModal}
@@ -191,7 +205,15 @@ const Buildings = () => {
           onSuccess={handleAddBuildingSuccess}
         />
       )}
-      </div>
+      {showEditModal && selectedBuilding && (
+        <EditBuildingModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          building={selectedBuilding}
+          onSuccess={handleUpdateBuildingSuccess}
+        />
+      )}
+    </div>
   );
 };
 

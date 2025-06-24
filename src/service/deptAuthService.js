@@ -155,7 +155,7 @@ export const getDepartmentTickets = async () => {
         message: data.message || 'Failed to fetch tickets'
       };
     }
-
+    
     return {
       success: true,
       tickets: data.tickets,
@@ -205,6 +205,44 @@ export const getDepartmentAttachment = async (filename) => {
     return {
       success: false,
       message: error.message || 'Failed to fetch attachment'
+    };
+  }
+};
+
+export const updateTicketStatus = async (ticketId, { status, comment }) => {
+  try {
+    const token = getDeptAdminToken();
+    if (!token) {
+      return {
+        success: false,
+        message: 'Authentication token not found'
+      };
+    }
+    const response = await fetch(`${API_URL}/update-ticket/${ticketId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ status, comment })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Failed to update ticket status'
+      };
+    }
+    return {
+      success: true,
+      ticket: data.ticket,
+      message: data.message || 'Ticket updated successfully'
+    };
+  } catch (error) {
+    console.error('Error in updateTicketStatus:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to update ticket status'
     };
   }
 };

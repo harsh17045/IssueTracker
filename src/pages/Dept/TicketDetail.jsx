@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, User, Calendar, Clock, Building2, Mail, Phone, MapPin, FileText, Download, Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { getDepartmentTickets, getDepartmentAttachment } from '../../service/deptAuthService';
+import { getDepartmentTickets, getDepartmentAttachment, updateTicketStatus } from '../../service/deptAuthService';
 import { useDeptAuth } from '../../context/DeptAuthContext';
 
 const TicketDetail = () => {
@@ -12,6 +12,9 @@ const TicketDetail = () => {
   const [loading, setLoading] = useState(true);
   const [attachmentUrl, setAttachmentUrl] = useState(null);
   const [attachmentType, setAttachmentType] = useState(null);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [comment, setComment] = useState('');
+  const [newStatus, setNewStatus] = useState('');
 
   useEffect(() => {
     const fetchTicketDetails = async () => {
@@ -39,7 +42,6 @@ const TicketDetail = () => {
           title: "Printer not working in Lab 101",
           description: "The printer in Lab 101 is showing error messages and not printing. The error code displayed is E-04. This is affecting students who need to print their assignments.",
           status: "pending",
-          priority: "medium",
           createdAt: "2024-03-20T10:00:00Z",
           raised_by: {
             name: "John Doe",
@@ -100,19 +102,6 @@ const TicketDetail = () => {
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority?.toLowerCase()) {
-      case 'high':
-        return { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' };
-      case 'medium':
-        return { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-200' };
-      case 'low':
-        return { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' };
-      default:
-        return { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-200' };
-    }
-  };
-
   const formatAttachmentName = (attachmentName) => {
     if (!attachmentName) return '';
     
@@ -138,29 +127,33 @@ const TicketDetail = () => {
       }
 
       const result = await getDepartmentAttachment(attachmentName);
-      
-      if (result.success) {
-        const blob = await result.data.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        // Determine file type based on extension
-        const extension = attachmentName.split('.').pop().toLowerCase();
-        let type;
-        if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(extension)) {
-          type = 'image';
-        } else if (extension === 'pdf') {
-          type = 'pdf';
-        } else {
-          type = 'unsupported';
-        }
-
-        setAttachmentUrl(url);
-        setAttachmentType(type);
-      } else {
+      if (!result.success) {
         toast.error(result.message || 'Failed to fetch attachment');
+        return;
       }
+
+      const blob = await result.data.blob();
+      if (!blob || blob.size === 0) {
+        toast.error('Attachment is empty or could not be loaded.');
+        return;
+      }
+      const url = window.URL.createObjectURL(blob);
+
+      // Determine file type based on extension
+      const extension = attachmentName.split('.').pop().toLowerCase();
+      let type;
+      if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(extension)) {
+        type = 'image';
+      } else if (extension === 'pdf') {
+        type = 'pdf';
+      } else {
+        type = 'unsupported';
+      }
+
+      setAttachmentUrl(url);
+      setAttachmentType(type);
     } catch (error) {
-      console.error('Error fetching attachment:', error);
+      console.error('Attachment preview error:', error);
       toast.error('Failed to fetch attachment');
     }
   };
@@ -196,6 +189,36 @@ const TicketDetail = () => {
     }
   };
 
+  const handleStatusUpdate = async (e) => {
+    e.preventDefault();
+    if (!newStatus) return toast.error('Please select a status');
+    setStatusUpdating(true);
+    const result = await updateTicketStatus(ticket._id, { status: newStatus });
+    setStatusUpdating(false);
+    if (result.success) {
+      setTicket(result.ticket);
+      toast.success('Status updated successfully');
+      setNewStatus('');
+    } else {
+      toast.error(result.message || 'Failed to update status');
+    }
+  };
+
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!comment.trim()) return toast.error('Comment cannot be empty');
+    setStatusUpdating(true);
+    const result = await updateTicketStatus(ticket._id, { comment });
+    setStatusUpdating(false);
+    if (result.success) {
+      setTicket(result.ticket);
+      toast.success('Comment added successfully');
+      setComment('');
+    } else {
+      toast.error(result.message || 'Failed to add comment');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -227,9 +250,6 @@ const TicketDetail = () => {
                 <p className="text-gray-600">Ticket ID: {ticket._id}</p>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold border ${getPriorityColor(ticket.priority).bg} ${getPriorityColor(ticket.priority).text} ${getPriorityColor(ticket.priority).border}`}>
-                  {ticket.priority?.toUpperCase() || 'MEDIUM'}
-                </span>
                 <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(ticket.status).bg} ${getStatusColor(ticket.status).text} ${getStatusColor(ticket.status).border}`}>
                   {getStatusIcon(ticket.status)}
                   {ticket.status === 'in_progress' ? 'In Progress' : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
@@ -406,32 +426,79 @@ const TicketDetail = () => {
             </div>
           )}
 
+          {/* Comments Section */}
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Comments</h3>
+            {ticket.comments && ticket.comments.length > 0 ? (
+              <div className="space-y-4">
+                {ticket.comments.map((comment, idx) => (
+                  <div key={comment._id || idx} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-gray-800">{comment.by === 'departmental-admin' ? 'Department Admin' : 'Employee'}</span>
+                      <span className="text-xs text-gray-500">{new Date(comment.at).toLocaleString()}</span>
+                    </div>
+                    <p className="text-gray-700">{comment.text}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">No comments yet.</p>
+            )}
+          </div>
+
           {/* Action Buttons */}
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => toast.info('Update status feature would be implemented here')}
-                disabled={ticket.status === 'revoked'}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  ticket.status === 'revoked'
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-500 text-white hover:bg-blue-600'
-                }`}
-              >
-                Update Status
-              </button>
-              <button
-                onClick={() => toast.info('Add comment feature would be implemented here')}
-                disabled={ticket.status === 'revoked'}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  ticket.status === 'revoked'
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-purple-500 text-white hover:bg-purple-600'
-                }`}
-              >
-                Add Comment
-              </button>
+            <div className="flex flex-col md:flex-row flex-wrap gap-4">
+              {/* Status Update Form */}
+              {ticket.status !== 'resolved' && ticket.status !== 'revoked' && (
+                <form onSubmit={handleStatusUpdate} className="flex items-center gap-2">
+                  <select
+                    value={newStatus}
+                    onChange={e => setNewStatus(e.target.value)}
+                    disabled={statusUpdating}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                  >
+                    <option value="">Select status</option>
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+                  <button
+                    type="submit"
+                    disabled={statusUpdating || !newStatus}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      statusUpdating || !newStatus
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                    }`}
+                  >
+                    {statusUpdating ? 'Updating...' : 'Update Status'}
+                  </button>
+                </form>
+              )}
+              {/* Add Comment Form */}
+              <form onSubmit={handleAddComment} className="flex items-center gap-2 w-full md:w-auto">
+                <input
+                  type="text"
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  disabled={ticket.status === 'revoked' || statusUpdating}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                />
+                <button
+                  type="submit"
+                  disabled={ticket.status === 'revoked' || statusUpdating || !comment.trim()}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    ticket.status === 'revoked' || statusUpdating || !comment.trim()
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-purple-500 text-white hover:bg-purple-600'
+                  }`}
+                >
+                  {statusUpdating ? 'Adding...' : 'Add Comment'}
+                </button>
+              </form>
               {ticket.status === 'revoked' && (
                 <div className="w-full mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800">
