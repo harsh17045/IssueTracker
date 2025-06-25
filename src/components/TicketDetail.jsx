@@ -225,7 +225,7 @@ const TicketDetail = () => {
       {/* Header */}
       <div className="mb-6">
         <Link
-          to="/dept/tickets"
+          to="/my-tickets"
           className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft size={20} className="mr-2" />

@@ -1,261 +1,140 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, CheckCircle, Clock, Bug, XCircle, Lock } from 'lucide-react';
+import { Ticket, Clock, CheckCircle2, XCircle, TrendingUp } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { getMyTickets } from '../services/authService';
 import { toast } from 'react-toastify';
-import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
-const StatsCard = ({ title, value, icon, color }) => {
-  return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border flex items-center justify-between">
+const StatsCard = ({ title, value, icon, bgColor, textColor, iconBg }) => (
+  <div className={`${bgColor} rounded-xl shadow-lg border p-6 transform hover:scale-105 transition-transform duration-200`}>
+    <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm font-medium text-gray-600">{title}</p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+        <p className={`text-sm ${textColor} font-medium`}>{title}</p>
+        <h3 className={`text-3xl font-bold ${textColor} mt-1`}>{value}</h3>
       </div>
-      <div className={`p-3 rounded-full ${color}`}>
-        {icon && React.createElement(icon, { size: 24, className: "text-white" })}
-      </div>
-    </div>
-  );
-};
-
-// Update the TicketCard component to be more compact
-const TicketCard = ({ ticket, index }) => {
-  const navigate = useNavigate();
-  const statusColors = {
-    'open': 'bg-blue-100 text-blue-800',
-    'assigned': 'bg-purple-100 text-purple-800',
-    'resolved': 'bg-green-100 text-green-800',
-    'closed': 'bg-gray-100 text-gray-800',
-    'revoked': 'bg-yellow-100 text-yellow-800',
-  };
-
-  const handleTicketClick = () => {
-    navigate('/my-tickets');
-  };
-
-  return (
-    <div 
-      className="bg-white rounded-lg border border-gray-200 hover:border-[#4B2D87] transition-colors overflow-hidden cursor-pointer flex-1 min-w-0"
-      onClick={handleTicketClick}
-    >
-      <div className="p-4">
-        <div className="flex flex-col h-full">
-          <div className="mb-2">
-            <p className="text-sm font-medium text-gray-900 truncate">
-              {index + 1}. {ticket.title}
-            </p>
-          </div>
-          <div className="flex items-center justify-between mt-auto">
-            <p className="text-xs font-medium text-gray-600 truncate">
-              {ticket.to_department?.name || 'Unknown Department'}
-            </p>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              statusColors[ticket.status] || 'bg-gray-100 text-gray-800'
-            }`}>
-              {ticket.status || 'Unknown'}
-            </span>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            {format(new Date(ticket.createdAt), 'MMM dd, yyyy')}
-          </p>
-        </div>
+      <div className={`p-3 ${iconBg} rounded-xl shadow-lg`}>
+        {icon && React.createElement(icon, { className: "text-white", size: 24 })}
       </div>
     </div>
-  );
-};
+  </div>
+);
 
-const HomePage = () => {
-  const [recentTickets, setRecentTickets] = useState([]);
-  const [stats, setStats] = useState([
-    { title: 'Pending Tickets', value: '0', icon: AlertTriangle, color: 'bg-red-500' },
-    { title: 'In Progress', value: '0', icon: Clock, color: 'bg-blue-500' },
-    { title: 'Resolved', value: '0', icon: CheckCircle, color: 'bg-green-500' },
-    { title: 'Revoked', value: '0', icon: XCircle, color: 'bg-yellow-500' },
-    { title: 'Total Tickets', value: '0', icon: Bug, color: 'bg-purple-500' },
-  ]);
+export default function HomePage() {
+  const { employee } = useAuth();
   const [loading, setLoading] = useState(true);
-  // Add new state for filtering
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [filteredTickets, setFilteredTickets] = useState([]);
+  const [tickets, setTickets] = useState([]);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchTickets = async () => {
-      try {
-        const fetchedTickets = await getMyTickets();
-        console.log('Fetched Tickets for Dashboard:', fetchedTickets);
-        if (Array.isArray(fetchedTickets)) {
-          // Calculate dynamic stats
-          const pendingTickets = fetchedTickets.filter(ticket => ticket.status === 'pending').length;
-          const inProgressTickets = fetchedTickets.filter(ticket => ticket.status === 'in_progress').length;
-          const resolvedTickets = fetchedTickets.filter(ticket => ticket.status === 'resolved').length;
-          const revokedTickets = fetchedTickets.filter(ticket => ticket.status === 'revoked').length;
-          const totalTickets = fetchedTickets.length;
-
-          // Update stats with dynamic values
-          setStats([
-            { title: 'Pending Tickets', value: pendingTickets.toString(), icon: AlertTriangle, color: 'bg-red-500' },
-            { title: 'In Progress', value: inProgressTickets.toString(), icon: Clock, color: 'bg-blue-500' },
-            { title: 'Resolved', value: resolvedTickets.toString(), icon: CheckCircle, color: 'bg-green-500' },
-            { title: 'Revoked', value: revokedTickets.toString(), icon: XCircle, color: 'bg-yellow-500' },
-            { title: 'Total Tickets', value: totalTickets.toString(), icon: Bug, color: 'bg-purple-500' },
-          ]);
-
-          // Sort by createdAt (newest first) and take top 3 for recent tickets
-          const sortedTickets = [...fetchedTickets].sort(
-            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-          );
-          setRecentTickets(sortedTickets.slice(0, 3));
-        } else {
-          setRecentTickets([]);
-          setStats([
-            { title: 'Pending Tickets', value: '0', icon: AlertTriangle, color: 'bg-red-500' },
-            { title: 'In Progress', value: '0', icon: Clock, color: 'bg-blue-500' },
-            { title: 'Resolved', value: '0', icon: CheckCircle, color: 'bg-green-500' },
-            { title: 'Revoked', value: '0', icon: XCircle, color: 'bg-yellow-500' },
-            { title: 'Total Tickets', value: '0', icon: Bug, color: 'bg-purple-500' },
-          ]);
-          toast.error('Invalid ticket data received');
-        }
-      } catch (error) {
-        toast.error('Failed to fetch tickets');
-        console.error('Error fetching tickets:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTickets();
   }, []);
 
-  // Add filter function
-  useEffect(() => {
-    if (!recentTickets) return;
-
-    switch (activeFilter) {
-      case 'pending':
-        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'pending'));
-        break;
-      case 'in_progress':
-        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'in_progress'));
-        break;
-      case 'resolved':
-        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'resolved'));
-        break;
-      case 'revoked':
-        setFilteredTickets(recentTickets.filter(ticket => ticket.status === 'revoked'));
-        break;
-      default:
-        setFilteredTickets(recentTickets);
+  const fetchTickets = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await getMyTickets();
+      setTickets(result || []);
+    } catch (error) {
+      console.error('Error fetching tickets:', error);
+      setError(error.message);
+      toast.error("Failed to fetch tickets.");
+    } finally {
+      setLoading(false);
     }
-  }, [activeFilter, recentTickets]);
+  };
 
-  // const statusColors = {
-  //   'pending': 'bg-blue-100 text-blue-800',
-  //   'in_progress': 'bg-purple-100 text-purple-800',
-  //   'resolved': 'bg-green-100 text-green-800',
-  //   'revoked': 'bg-yellow-100 text-yellow-800'
-  // };
+  const stats = {
+    totalTickets: tickets.length,
+    pendingTickets: tickets.filter(ticket => ticket.status === 'pending').length,
+    inProgressTickets: tickets.filter(ticket => ticket.status === 'in_progress').length,
+    resolvedTickets: tickets.filter(ticket => ticket.status === 'resolved').length,
+    revokedTickets: tickets.filter(ticket => ticket.status === 'revoked').length
+  };
+
+  const recentTickets = tickets
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4B2D87]"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">IssueTracker Dashboard</h1>
+    <div className="p-6 max-w-7xl mx-auto">
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600">Error: {error}</p>
         </div>
+      )}
+      
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-800">Welcome, {employee?.name || 'User'}</h1>
+        <p className="text-gray-600">Your personal ticket dashboard</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ">
-        {stats.map((stat, index) => (
-          <StatsCard key={index} {...stat} />
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <StatsCard title="Total Tickets" value={stats.totalTickets} icon={Ticket} bgColor="bg-purple-100" textColor="text-purple-800" iconBg="bg-purple-500" />
+        <StatsCard title="Pending Tickets" value={stats.pendingTickets} icon={Clock} bgColor="bg-blue-100" textColor="text-blue-800" iconBg="bg-blue-500" />
+        <StatsCard title="In Progress" value={stats.inProgressTickets} icon={TrendingUp} bgColor="bg-yellow-100" textColor="text-yellow-800" iconBg="bg-yellow-400" />
+        <StatsCard title="Resolved Tickets" value={stats.resolvedTickets} icon={CheckCircle2} bgColor="bg-green-100" textColor="text-green-800" iconBg="bg-green-500" />
+        <StatsCard title="Revoked Tickets" value={stats.revokedTickets} icon={XCircle} bgColor="bg-red-100" textColor="text-red-800" iconBg="bg-red-500" />
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {/* Recent Tickets */}
-        <div className="bg-white rounded-2xl shadow-sm border">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Recent Tickets</h3>
-              <div className="flex gap-2 overflow-x-auto pb-2">
-                <button 
-                  onClick={() => setActiveFilter('all')}
-                  className={`px-4 py-2 rounded-full transition-colors ${
-                    activeFilter === 'all' 
-                      ? 'bg-[#4B2D87] text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  All
-                </button>
-                <button 
-                  onClick={() => setActiveFilter('pending')}
-                  className={`px-4 py-2 rounded-full transition-colors ${
-                    activeFilter === 'pending' 
-                      ? 'bg-[#4B2D87] text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Pending
-                </button>
-                <button 
-                  onClick={() => setActiveFilter('in_progress')}
-                  className={`px-4 py-2 rounded-full transition-colors ${
-                    activeFilter === 'in_progress' 
-                      ? 'bg-[#4B2D87] text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  In Progress
-                </button>
-                <button 
-                  onClick={() => setActiveFilter('resolved')}
-                  className={`px-4 py-2 rounded-full transition-colors ${
-                    activeFilter === 'resolved' 
-                      ? 'bg-[#4B2D87] text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Resolved
-                </button>
-                <button 
-                  onClick={() => setActiveFilter('revoked')}
-                  className={`px-4 py-2 rounded-full transition-colors ${
-                    activeFilter === 'revoked' 
-                      ? 'bg-[#4B2D87] text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Revoked
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="p-6">
-            {loading ? (
-              <div className="text-center py-10">
-                <p className="text-gray-500">Loading recent tickets...</p>
-              </div>
-            ) : filteredTickets.length === 0 ? (
-              <div className="text-center py-10">
-                <Bug size={48} className="text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">
-                  No {activeFilter !== 'all' ? activeFilter : 'recent'} tickets found
-                </p>
-              </div>
-            ) : (
-              <div className="flex gap-4">
-                {filteredTickets.map((ticket, index) => (
-                  <TicketCard key={ticket._id} ticket={ticket} index={index} />
-                ))}
-              </div>
-            )}
-          </div>
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-shadow duration-300 mb-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-800">Recent Tickets</h2>
+          <button onClick={fetchTickets} className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+            Refresh
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Title</th>
+                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Status</th>
+                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Created At</th>
+                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Department</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentTickets.length > 0 ? (
+                recentTickets.map((ticket) => (
+                  <tr 
+                    key={ticket._id} 
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                    onClick={() => navigate(`/my-tickets/${ticket._id}`)}
+                  >
+                    <td className="py-4 px-4 text-sm text-gray-900 font-medium">{ticket.title}</td>
+                    <td className="py-4 px-4">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                        ticket.status === 'pending' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
+                        ticket.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' :
+                        ticket.status === 'resolved' ? 'bg-green-100 text-green-800 border border-green-300' : 
+                        'bg-red-100 text-red-800 border border-red-300'
+                      }`}>
+                        {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-600">{new Date(ticket.createdAt).toLocaleDateString()}</td>
+                    <td className="py-4 px-4 text-sm text-gray-600">{ticket.to_department?.name || 'N/A'}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="py-12 text-center text-gray-500">No tickets found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
-};
-
-export default HomePage;
+}
