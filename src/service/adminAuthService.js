@@ -176,14 +176,26 @@ export const deleteDepartment = async (deptId) => {
 
 
 
-export const generateTicketReport = async () => {
+export const generateTicketReport = async ({
+  startDate,
+  endDate,
+  status = "all",
+  includeComments = false
+} = {}) => {
   try {
     const token = getAdminToken();
     if (!token) {
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch(`${API_URL}/export-report-pdf`, {
+    // Build query string
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (status) params.append('status', status);
+    params.append('includeComments', includeComments ? 'true' : 'false');
+
+    const response = await fetch(`${API_URL}/export-report-pdf?${params.toString()}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -283,7 +295,9 @@ export const getAllDepartmentalAdmins = async () => {
       },
       isFirstLogin: admin.isFirstLogin,
       createdAt: admin.createdAt,
-      updatedAt: admin.updatedAt
+      updatedAt: admin.updatedAt,
+      // Include locations for network engineers
+      ...(admin.locations && { locations: admin.locations })
     }));
 
     return formattedAdmins;
@@ -295,9 +309,25 @@ export const getAllDepartmentalAdmins = async () => {
 
 export const createDepartmentalAdmin = async (adminData) => {
   try {
+    // Format the data to match backend expectations
+    const formattedData = {
+      name: adminData.name,
+      email: adminData.email,
+      department: adminData.department
+    };
+
+    // If it's a network engineer, format the building assignments
+    if (adminData.department.toLowerCase().includes('network engineer') && adminData.buildingAssignments) {
+      formattedData.locations = adminData.buildingAssignments.map(assignment => ({
+        building: assignment.buildingName, // Backend expects building name, not ID
+        floor: assignment.floor,
+        labs: assignment.labs || [] // Add labs array - will need to be populated from frontend
+      }));
+    }
+
     const response = await makeAuthorizedRequest('/create-departmental-admin', {
       method: 'POST',
-      body: JSON.stringify(adminData)
+      body: JSON.stringify(formattedData)
     });
     return response;
   } catch (error) {
@@ -343,14 +373,26 @@ export const getAttachment = async (filename) => {
   }
 };
 
-export const exportTicketReportExcel = async () => {
+export const exportTicketReportExcel = async ({
+  startDate,
+  endDate,
+  status = "all",
+  includeComments = false
+} = {}) => {
   try {
     const token = getAdminToken();
     if (!token) {
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch(`${API_URL}/export-report-excel`, {
+    // Build query string
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    if (status) params.append('status', status);
+    params.append('includeComments', includeComments ? 'true' : 'false');
+
+    const response = await fetch(`${API_URL}/export-report-excel?${params.toString()}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -405,6 +447,35 @@ export const updateBuilding = async (id, buildingData) => {
     return {
       success: false,
       message: error.message || "An error occurred.",
+    };
+  }
+};
+
+export const deleteBuilding = async (buildingId) => {
+  try {
+
+    const token = localStorage.getItem('adminToken');
+    if (!token) throw new Error('No authentication token found');
+    console.log('Deleting building with ID:', buildingId);
+    const response = await fetch(`${API_URL}/delete-building/${buildingId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    console.log('Delete building response:', response);
+    const data = await response.json();
+    console.log('Delete building data:', data);
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to delete building');
+    }
+
+    return { success: true, message: data.message };
+  } catch (error) {
+    console.error("Error deleting building:", error);
+    return {
+      success: false,
+      message: error.message || "An error occurred while deleting the building.",
     };
   }
 };

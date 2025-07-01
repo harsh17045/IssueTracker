@@ -16,6 +16,29 @@ const Employee = () => {
     fetchEmployees();
   }, []);
 
+  // Reset page to 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  // Filter employees by search query
+  const filteredEmployees = employees.filter(emp => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+    return (
+      emp.name.toLowerCase().includes(query) ||
+      emp.email.toLowerCase().includes(query) ||
+      (typeof emp.department === 'object'
+        ? (emp.department?.name || '').toLowerCase().includes(query)
+        : (emp.department || '').toLowerCase().includes(query)) ||
+      String(emp.contact_no || '').toLowerCase().includes(query)
+    );
+  });
+
+  const indexOfLastEmployee = currentPage * employeesPerPage;
+  const indexOfFirstEmployee = indexOfLastEmployee - employeesPerPage;
+  const currentEmployees = filteredEmployees.slice(indexOfFirstEmployee, indexOfLastEmployee);
+
   const fetchEmployees = async () => {
     try {
       setLoading(true);
@@ -29,10 +52,6 @@ const Employee = () => {
     }
   };
 
-  const indexOfLastEmployee = currentPage * employeesPerPage;
-  const indexOfFirstEmployee = indexOfLastEmployee - employeesPerPage;
-  const currentEmployees = employees.slice(indexOfFirstEmployee, indexOfLastEmployee);
-
   // Add this handler
   const handleRowClick = (employeeId) => {
     navigate(`/admin/employee/${employeeId}`);
@@ -42,10 +61,6 @@ const Employee = () => {
       <div className="p-6 max-w-[1600px] mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Employees</h1>
-          <button className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition-colors">
-            <Plus size={20} />
-            Add Employee
-          </button>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -142,7 +157,7 @@ const Employee = () => {
           <div className="px-6 py-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-500">
-                Showing {indexOfFirstEmployee + 1} to {Math.min(indexOfLastEmployee, employees.length)} of {employees.length} entries
+                Showing {indexOfFirstEmployee + 1} to {Math.min(indexOfLastEmployee, filteredEmployees.length)} of {filteredEmployees.length} entries
               </div>
               <div className="flex gap-2">
                 <button
@@ -153,8 +168,8 @@ const Employee = () => {
                   Previous
                 </button>
                 <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(employees.length / employeesPerPage)))}
-                  disabled={currentPage === Math.ceil(employees.length / employeesPerPage)}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredEmployees.length / employeesPerPage)))}
+                  disabled={currentPage === Math.ceil(filteredEmployees.length / employeesPerPage)}
                   className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50"
                 >
                   Next

@@ -67,11 +67,6 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         </div>
       ),
       icon: Shield,
-      hasSubmenu: true,
-      submenu: [
-        { id: 'viewProfile', label: 'View Profile', icon: Users, path: '/admin/profile/view' },
-        { id: 'changePassword', label: 'Change Password', icon: FileText, path: '/admin/profile/change-password' },
-      ],
     },
   ];
 

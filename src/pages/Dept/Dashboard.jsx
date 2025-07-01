@@ -1,219 +1,509 @@
-import { useState, useEffect } from 'react';
-import { Building2, Ticket, Users, Clock, AlertCircle, CheckCircle2, XCircle, TrendingUp, Activity } from 'lucide-react';
-import { useDeptAuth } from '../../context/DeptAuthContext';
-import { getDepartmentTickets } from '../../service/deptAuthService';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, AreaChart, Area, RadialBarChart, RadialBar, ComposedChart } from 'recharts';
+"use client"
+
+import { useEffect, useState, useRef } from "react"
+import { Building2, Ticket, Clock, CheckCircle2, XCircle, Activity, BarChart3, Bell } from "lucide-react"
+import { useDeptAuth } from "../../context/DeptAuthContext"
+import { getDepartmentTickets, getLoggedInDepartmentalAdmin } from "../../service/deptAuthService"
+import { useNavigate } from "react-router-dom"
+import React from "react"
+import io from "socket.io-client"
 
 export default function DepartmentDashboard() {
-  const { deptAdmin } = useDeptAuth();
-  const [loading, setLoading] = useState(true);
-  const [tickets, setTickets] = useState([]);
-  const [error, setError] = useState(null);
-  
-  console.log('Dashboard component rendered');
-  console.log('deptAdmin from context:', deptAdmin);
-  
+  const { deptAdmin: contextDeptAdmin } = useDeptAuth()
+  const [deptAdmin, setDeptAdmin] = useState(contextDeptAdmin)
+  const [loading, setLoading] = useState(true)
+  const [tickets, setTickets] = useState([])
+  const [error, setError] = useState(null)
+  const navigate = useNavigate()
+  const [activeView, setActiveView] = useState("cards")
+  const [notification, setNotification] = useState(null)
+  const [connectionStatus, setConnectionStatus] = useState("disconnected")
+  const socketRef = useRef(null)
+
   // Calculate stats from tickets data
   const stats = {
     totalTickets: tickets.length,
-    pendingTickets: tickets.filter(ticket => ticket.status === 'pending').length,
-    inProgressTickets: tickets.filter(ticket => ticket.status === 'in_progress').length,
-    resolvedTickets: tickets.filter(ticket => ticket.status === 'resolved').length,
-    revokedTickets: tickets.filter(ticket => ticket.status === 'revoked').length
-  };
+    pendingTickets: tickets.filter((ticket) => ticket.status === "pending").length,
+    inProgressTickets: tickets.filter((ticket) => ticket.status === "in_progress").length,
+    resolvedTickets: tickets.filter((ticket) => ticket.status === "resolved").length,
+    revokedTickets: tickets.filter((ticket) => ticket.status === "revoked").length,
+  }
 
   // Get recent tickets (last 5)
-  const recentTickets = tickets
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 5);
+  const recentTickets = tickets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5)
 
-  // Enhanced data for modern pie chart
-  const pieChartData = [
-    { 
-      name: 'Pending', 
-      value: stats.pendingTickets, 
-      color: '#3B82F6',
-      fill: 'url(#pendingGradient)',
-      stroke: '#2563EB'
+  const ticketData = [
+    {
+      name: "Pending",
+      value: stats.pendingTickets,
+      color: "#3B82F6",
+      gradient: "from-blue-400 to-blue-600",
+      icon: Clock,
+      bgGradient: "from-blue-50 to-blue-100",
+      textColor: "text-blue-700",
+      description: "Awaiting assignment",
     },
-    { 
-      name: 'In Progress', 
-      value: stats.inProgressTickets, 
-      color: '#F59E42',
-      fill: 'url(#inProgressGradient)',
-      stroke: '#D97706'
+    {
+      name: "In Progress",
+      value: stats.inProgressTickets,
+      color: "#F59E0B",
+      gradient: "from-amber-400 to-orange-500",
+      icon: Activity,
+      bgGradient: "from-amber-50 to-orange-100",
+      textColor: "text-orange-700",
+      description: "Currently being worked on",
     },
-    { 
-      name: 'Resolved', 
-      value: stats.resolvedTickets, 
-      color: '#22C55E',
-      fill: 'url(#resolvedGradient)',
-      stroke: '#16A34A'
+    {
+      name: "Resolved",
+      value: stats.resolvedTickets,
+      color: "#10B981",
+      gradient: "from-emerald-400 to-green-500",
+      icon: CheckCircle2,
+      bgGradient: "from-emerald-50 to-green-100",
+      textColor: "text-green-700",
+      description: "Successfully completed",
     },
-    { 
-      name: 'Revoked', 
-      value: stats.revokedTickets, 
-      color: '#EF4444',
-      fill: 'url(#revokedGradient)',
-      stroke: '#B91C1C'
-    }
-  ];
+    {
+      name: "Revoked",
+      value: stats.revokedTickets,
+      color: "#EF4444",
+      gradient: "from-red-400 to-red-600",
+      icon: XCircle,
+      bgGradient: "from-red-50 to-red-100",
+      textColor: "text-red-700",
+      description: "Cancelled or rejected",
+    },
+  ]
 
-  // Enhanced data for modern bar chart
-  const statusData = [
-    { 
-      status: 'Pending', 
-      count: stats.pendingTickets, 
-      color: '#3B82F6',
-      fill: 'url(#pendingBarGradient)',
-      stroke: '#2563EB'
-    },
-    { 
-      status: 'In Progress', 
-      count: stats.inProgressTickets, 
-      color: '#F59E42',
-      fill: 'url(#inProgressBarGradient)',
-      stroke: '#D97706'
-    },
-    { 
-      status: 'Resolved', 
-      count: stats.resolvedTickets, 
-      color: '#22C55E',
-      fill: 'url(#resolvedBarGradient)',
-      stroke: '#16A34A'
-    },
-    { 
-      status: 'Revoked', 
-      count: stats.revokedTickets, 
-      color: '#EF4444',
-      fill: 'url(#revokedBarGradient)',
-      stroke: '#B91C1C'
-    }
-  ];
+  // Helper to get building name from location (handles both string and object)
+  const getBuildingName = (building) => (typeof building === "string" ? building : building?.name || "Unknown Building")
 
-  // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-semibold text-gray-800">{label}</p>
-          {payload.map((entry, index) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
-              {entry.name}: {entry.value}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
+  // Always sync deptAdmin with context
   useEffect(() => {
-    fetchTickets();
-  }, []);
+    setDeptAdmin(contextDeptAdmin)
+  }, [contextDeptAdmin])
+
+  // Fetch full admin info first
+  useEffect(() => {
+    async function fetchFullAdmin() {
+      try {
+        const result = await getLoggedInDepartmentalAdmin()
+        if (result.success && result.data) {
+          const adminData = result.data.admin || result.data
+          console.log("Fetched full admin data:", adminData)
+          setDeptAdmin(adminData)
+        }
+      } catch (error) {
+        console.error("Error fetching admin data:", error)
+      }
+    }
+
+    fetchFullAdmin()
+  }, [])
+
+  // WebSocket connection effect - runs after we have full admin data
+  useEffect(() => {
+    if (!deptAdmin || !deptAdmin.department) {
+      console.log("DeptAdmin or department not available yet, skipping WebSocket setup")
+      return
+    }
+
+    // Clean up existing connection
+    if (socketRef.current) {
+      socketRef.current.disconnect()
+      socketRef.current = null
+    }
+
+    console.log("Setting up WebSocket connection for admin:", deptAdmin)
+
+    const socket = io("http://localhost:5000", {
+      transports: ["polling", "websocket"],
+      withCredentials: true,
+      timeout: 20000,
+    })
+
+    socketRef.current = socket
+
+    // Connection event handlers
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id)
+      setConnectionStatus("connected")
+
+      // Determine room IDs to join
+      const roomsToJoin = []
+
+      // Always join the department ID room (primary room for notifications)
+      if (typeof deptAdmin.department === "object" && deptAdmin.department._id) {
+        roomsToJoin.push(deptAdmin.department._id.toString())
+      }
+
+      // Also join department name room for compatibility
+      const departmentName = typeof deptAdmin.department === "object" ? deptAdmin.department.name : deptAdmin.department
+
+      if (departmentName) {
+        roomsToJoin.push(`department-${departmentName.toLowerCase()}`)
+      }
+
+      // For Network Engineers, also join location-specific rooms
+      if (deptAdmin.isNetworkEngineer && deptAdmin.locations?.length > 0) {
+        deptAdmin.locations.forEach((location) => {
+          const buildingId = typeof location.building === "object" ? location.building._id : location.building
+          if (buildingId && location.floor !== undefined) {
+            roomsToJoin.push(`network-${buildingId}-${location.floor}`)
+          }
+        })
+      }
+
+      console.log("Joining rooms:", roomsToJoin)
+
+      // Join all relevant rooms
+      roomsToJoin.forEach((room) => {
+        socket.emit("join-room", room)
+      })
+
+      // Test echo
+      socket.emit("test-echo", "hello from dashboard frontend")
+    })
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error)
+      setConnectionStatus("error")
+    })
+
+    socket.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason)
+      setConnectionStatus("disconnected")
+    })
+
+    socket.on("room-joined", (data) => {
+      console.log("Successfully joined room:", data)
+      setConnectionStatus("connected-room")
+    })
+
+    socket.on("test-echo", (msg) => {
+      console.log("Echo from backend:", msg)
+    })
+
+    // New comment notification handler
+    socket.on("new-comment", (data) => {
+      console.log("Received new-comment event:", data)
+
+      setNotification({
+        message: `New comment from ${data.employeeName || "Employee"} on: ${data.title}`,
+        ticketId: data.ticketId,
+        timestamp: new Date().toISOString(),
+      })
+
+      // Auto-dismiss notification after 10 seconds
+      setTimeout(() => {
+        setNotification(null)
+      }, 10000)
+
+      // Refresh tickets to show updated data
+      fetchTickets()
+    })
+
+    // New ticket notification handler
+    socket.on("new-ticket", (data) => {
+      console.log("Received new-ticket event:", data)
+
+      setNotification({
+        message: `New ticket raised: ${data.title} (Priority: ${data.priority})`,
+        ticketId: data.ticketId,
+        timestamp: new Date().toISOString(),
+      })
+
+      // Auto-dismiss notification after 10 seconds
+      setTimeout(() => {
+        setNotification(null)
+      }, 10000)
+
+      // Refresh tickets to show updated data
+      fetchTickets()
+    })
+
+    return () => {
+      if (socketRef.current) {
+        console.log("Cleaning up socket connection")
+        socketRef.current.disconnect()
+        socketRef.current = null
+      }
+      setConnectionStatus("disconnected")
+    }
+  }, [deptAdmin]) // Dependency on full deptAdmin object
+
+  // Fetch tickets
+  useEffect(() => {
+    fetchTickets()
+  }, [])
 
   const fetchTickets = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      const result = await getDepartmentTickets();
-      
+      setLoading(true)
+      setError(null)
+
+      const result = await getDepartmentTickets()
+
       if (result.success) {
-        setTickets(result.tickets);
+        setTickets(result.tickets)
       } else {
-        setError(result.message);
-        // Fallback to static data if API fails
-        setTickets([
-          {
-            _id: 1,
-            title: "Printer not working in Lab 101",
-            status: "pending",
-            createdAt: "2024-03-20T10:00:00Z"
-          },
-          {
-            _id: 2,
-            title: "Network connectivity issue in Building A",
-            status: "in_progress",
-            createdAt: "2024-03-19T15:30:00Z"
-          },
-          {
-            _id: 3,
-            title: "AC not working in Room 203",
-            status: "resolved",
-            createdAt: "2024-03-18T09:15:00Z"
-          },
-          {
-            _id: 4,
-            title: "Software installation request",
-            status: "revoked",
-            createdAt: "2024-03-17T14:20:00Z"
-          }
-        ]);
+        setError(result.message)
       }
     } catch (error) {
-      console.error('Error fetching tickets:', error);
-      setError(error.message);
-      // Fallback to static data
-      setTickets([
-        {
-          _id: 1,
-          title: "Printer not working in Lab 101",
-          status: "pending",
-          createdAt: "2024-03-20T10:00:00Z"
-        },
-        {
-          _id: 2,
-          title: "Network connectivity issue in Building A",
-          status: "in_progress",
-          createdAt: "2024-03-19T15:30:00Z"
-        },
-        {
-          _id: 3,
-          title: "AC not working in Room 203",
-          status: "resolved",
-          createdAt: "2024-03-18T09:15:00Z"
-        },
-        {
-          _id: 4,
-          title: "Software installation request",
-          status: "revoked",
-          createdAt: "2024-03-17T14:20:00Z"
-        }
-      ]);
+      console.error("Error fetching tickets:", error)
+      setError(error.message)
     } finally {
-      console.log('Setting loading to false');
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
+  // Connection status indicator
+  const ConnectionStatus = () => {
+    const statusConfig = {
+      connected: { color: "bg-green-500", text: "Connected", icon: "🟢" },
+      "connected-room": { color: "bg-green-500", text: "Connected & Joined Room", icon: "✅" },
+      disconnected: { color: "bg-red-500", text: "Disconnected", icon: "🔴" },
+      error: { color: "bg-yellow-500", text: "Connection Error", icon: "⚠️" },
+    }
+
+    const config = statusConfig[connectionStatus] || statusConfig.disconnected
+
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
+        <span className="text-gray-600">WebSocket: {config.text}</span>
+      </div>
+    )
+  }
+
+  function ViewToggle() {
+    return (
+      <div className="flex bg-gray-100 rounded-lg p-1 mb-6">
+        {[
+          { id: "cards", label: "Cards", icon: BarChart3 },
+          { id: "wave", label: "Wave", icon: Activity },
+        ].map(({ id, label, icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveView(id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+              activeView === id ? "bg-white shadow-md text-blue-600 font-medium" : "text-gray-600 hover:text-gray-800"
+            }`}
+          >
+            {React.createElement(icon, { size: 18 })}
+            {label}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  function CardsView() {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {ticketData.map((item) => {
+          const percentage = stats.totalTickets ? ((item.value / stats.totalTickets) * 100).toFixed(1) : 0
+          const Icon = item.icon
+          return (
+            <div
+              key={item.name}
+              className={`relative overflow-hidden bg-gradient-to-br ${item.bgGradient} rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group cursor-pointer`}
+            >
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/30"></div>
+                <div className="absolute -right-8 top-12 w-12 h-12 rounded-full bg-white/20"></div>
+              </div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div
+                    className={`p-3 bg-gradient-to-r ${item.gradient} rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                  >
+                    <Icon className="text-white" size={24} />
+                  </div>
+                  <div className={`text-right ${item.textColor}`}>
+                    <div className="text-xs font-medium opacity-75">{percentage}%</div>
+                  </div>
+                </div>
+                <div className="mb-2">
+                  <h3 className={`text-3xl font-bold ${item.textColor} mb-1`}>{item.value}</h3>
+                  <p className={`text-sm font-semibold ${item.textColor} mb-1`}>{item.name}</p>
+                  <p className={`text-xs ${item.textColor} opacity-75`}>{item.description}</p>
+                </div>
+                <div className="w-full bg-white/30 rounded-full h-2 mt-4">
+                  <div
+                    className={`h-2 bg-gradient-to-r ${item.gradient} rounded-full transition-all duration-1000 ease-out`}
+                    style={{ width: `${percentage}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  function WaveView() {
+    return (
+      <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl p-8">
+        <div className="mb-8 text-center">
+          <h3 className="text-2xl font-bold text-gray-800 mb-2">Ticket Flow Analysis</h3>
+          <p className="text-gray-600">Interactive wave representation of ticket distribution</p>
+        </div>
+        <div className="relative h-64 flex items-end justify-center gap-4">
+          {ticketData.map((item) => {
+            const maxVal = Math.max(...ticketData.map((d) => d.value))
+            const height = maxVal ? (item.value / maxVal) * 200 : 0
+            const Icon = item.icon
+            return (
+              <div key={item.name} className="flex flex-col items-center group cursor-pointer">
+                <div
+                  className={`relative bg-gradient-to-t ${item.gradient} rounded-t-2xl transition-all duration-700 ease-out hover:scale-105 shadow-lg`}
+                  style={{ width: "80px", height: `${height}px` }}
+                >
+                  <div
+                    className={`absolute -top-6 left-1/2 transform -translate-x-1/2 p-2 bg-gradient-to-r ${item.gradient} rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                  >
+                    <Icon className="text-white" size={20} />
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">{item.value}</span>
+                  </div>
+                  <div className="absolute inset-0 bg-white/20 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+                <div className="mt-4 text-center">
+                  <p className={`font-semibold text-sm ${item.textColor}`}>{item.name}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {stats.totalTickets ? ((item.value / stats.totalTickets) * 100).toFixed(1) : 0}%
+                  </p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
-    console.log('Showing loading spinner');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4B2D87]"></div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-6 right-6 z-50 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-4 animate-slide-in border-l-4 border-blue-300">
+          <Bell className="text-blue-200" size={20} />
+          <div className="flex-1">
+            <p className="font-medium">{notification.message}</p>
+            <p className="text-xs text-blue-200 mt-1">{new Date(notification.timestamp).toLocaleTimeString()}</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30 transition"
+              onClick={() => {
+                setNotification(null)
+                navigate(`/dept/tickets/${notification.ticketId}`)
+              }}
+            >
+              View
+            </button>
+            <button
+              className="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30 transition"
+              onClick={() => setNotification(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Error Display */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-600">Error: {error}</p>
         </div>
       )}
-      
-      {/* Welcome Section */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Welcome, {deptAdmin?.name || 'Department Admin'}
+
+      {/* Welcome Section with Connection Status */}
+      <div className="mb-8 flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+          Welcome, <span>{deptAdmin?.name || "Department Admin"}</span>
         </h1>
-        <p className="text-gray-600">
-          {deptAdmin?.department || 'Department'} Dashboard
-        </p>
+        <ConnectionStatus />
       </div>
+
+      {/* Debug Info */}
+      {deptAdmin && (
+        <div className="mb-4 p-3 bg-gray-100 rounded-lg text-sm">
+          <p>
+            <strong>Department:</strong>{" "}
+            {typeof deptAdmin.department === "object" ? deptAdmin.department.name : deptAdmin.department}
+          </p>
+          <p>
+            <strong>Department ID:</strong>{" "}
+            {typeof deptAdmin.department === "object" ? deptAdmin.department._id : "N/A"}
+          </p>
+          <p>
+            <strong>Is Network Engineer:</strong> {deptAdmin.isNetworkEngineer ? "Yes" : "No"}
+          </p>
+          {deptAdmin.locations && (
+            <p>
+              <strong>Locations:</strong> {deptAdmin.locations.length}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Network Engineer Locations Section */}
+      {deptAdmin?.isNetworkEngineer && deptAdmin.locations?.length > 0 && (
+        <section className="mb-10">
+          <header className="mb-6 flex items-center gap-2">
+            <Building2 className="text-gray-500" size={22} />
+            <h2 className="text-2xl font-semibold text-gray-800 tracking-wide">Assigned Locations</h2>
+          </header>
+          <div className="overflow-x-auto rounded-xl shadow border border-gray-200 bg-white">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-gray-300 text-gray-700">
+                  <th className="px-6 py-3 text-left font-semibold rounded-tl-xl">Building</th>
+                  <th className="px-6 py-3 text-left font-semibold">Floor</th>
+                  <th className="px-6 py-3 text-left font-semibold rounded-tr-xl">Labs</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deptAdmin.locations.map((loc, idx) => (
+                  <tr key={idx} className="even:bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <td className="px-6 py-3 font-medium text-gray-900">{getBuildingName(loc.building)}</td>
+                    <td className="px-6 py-3 text-gray-800">{loc.floor}</td>
+                    <td className="px-6 py-3">
+                      {loc.labs && loc.labs.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {loc.labs.map((lab, i) => (
+                            <span
+                              key={i}
+                              className="inline-block bg-gray-200 text-gray-800 px-2 py-0.5 rounded-full text-xs font-semibold"
+                            >
+                              Lab {lab}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-xs">No labs assigned</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
@@ -228,7 +518,6 @@ export default function DepartmentDashboard() {
             </div>
           </div>
         </div>
-
         <div className="bg-blue-100 rounded-xl shadow-lg border border-blue-300 p-6 transform hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
@@ -240,7 +529,6 @@ export default function DepartmentDashboard() {
             </div>
           </div>
         </div>
-
         <div className="bg-yellow-100 rounded-xl shadow-lg border border-yellow-300 p-6 transform hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
@@ -252,7 +540,6 @@ export default function DepartmentDashboard() {
             </div>
           </div>
         </div>
-
         <div className="bg-green-100 rounded-xl shadow-lg border border-green-300 p-6 transform hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
@@ -264,7 +551,6 @@ export default function DepartmentDashboard() {
             </div>
           </div>
         </div>
-
         <div className="bg-red-100 rounded-xl shadow-lg border border-red-300 p-6 transform hover:scale-105 transition-transform duration-200">
           <div className="flex items-center justify-between">
             <div>
@@ -278,7 +564,7 @@ export default function DepartmentDashboard() {
         </div>
       </div>
 
-      {/* Recent Tickets - Now at the top */}
+      {/* Recent Tickets */}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-shadow duration-300 mb-8">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
@@ -287,7 +573,7 @@ export default function DepartmentDashboard() {
             </div>
             <h2 className="text-xl font-bold text-gray-800">Recent Tickets</h2>
           </div>
-          <button 
+          <button
             onClick={fetchTickets}
             className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
           >
@@ -307,27 +593,38 @@ export default function DepartmentDashboard() {
             <tbody>
               {recentTickets.length > 0 ? (
                 recentTickets.map((ticket) => (
-                  <tr key={ticket._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                  <tr
+                    key={ticket._id}
+                    className="border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200 cursor-pointer"
+                    onClick={() => navigate(`/dept/tickets/${ticket._id}`)}
+                    tabIndex={0}
+                    aria-label={`View details for ticket ${ticket.title}`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") navigate(`/dept/tickets/${ticket._id}`)
+                    }}
+                  >
                     <td className="py-4 px-4 text-sm text-gray-900 font-medium">{ticket.title}</td>
                     <td className="py-4 px-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                        ticket.status === 'pending' 
-                          ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                          : ticket.status === 'in_progress'
-                          ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                          : ticket.status === 'resolved'
-                          ? 'bg-green-100 text-green-800 border border-green-300'
-                          : 'bg-red-100 text-red-800 border border-red-300'
-                      }`}>
-                        {ticket.status === 'in_progress' ? 'In Progress' : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                          ticket.status === "pending"
+                            ? "bg-blue-100 text-blue-800 border border-blue-300"
+                            : ticket.status === "in_progress"
+                              ? "bg-yellow-100 text-yellow-800 border border-yellow-300"
+                              : ticket.status === "resolved"
+                                ? "bg-green-100 text-green-800 border border-green-300"
+                                : "bg-red-100 text-red-800 border border-red-300"
+                        }`}
+                      >
+                        {ticket.status === "in_progress"
+                          ? "In Progress"
+                          : ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-sm text-gray-600">
                       {new Date(ticket.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="py-4 px-4 text-sm text-gray-600">
-                      {ticket.raised_by?.name || 'N/A'}
-                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-600">{ticket.raised_by?.name || "N/A"}</td>
                   </tr>
                 ))
               ) : (
@@ -346,99 +643,36 @@ export default function DepartmentDashboard() {
         </div>
       </div>
 
-      {/* Modern Charts Section - Now at the bottom */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Modern Pie Chart with Gradients */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-shadow duration-300">
-          <div className="flex items-center mb-6">
-            <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg mr-3">
-              <Activity className="text-white" size={20} />
-            </div>
-            <h2 className="text-xl font-bold text-gray-800">Ticket Distribution</h2>
-          </div>
-          <ResponsiveContainer width="100%" height={350}>
-            <PieChart>
-              <defs>
-                <linearGradient id="pendingGradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#2563EB" stopOpacity={1} />
-                </linearGradient>
-                <linearGradient id="inProgressGradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#F59E42" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#D97706" stopOpacity={1} />
-                </linearGradient>
-                <linearGradient id="resolvedGradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#22C55E" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#16A34A" stopOpacity={1} />
-                </linearGradient>
-                <linearGradient id="revokedGradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#EF4444" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#B91C1C" stopOpacity={1} />
-                </linearGradient>
-              </defs>
-              <Pie
-                data={pieChartData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent, value }) => value > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
-                outerRadius={120}
-                innerRadius={60}
-                fill="#8884d8"
-                dataKey="value"
-                strokeWidth={3}
-                stroke="#fff"
-              >
-                {pieChartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.stroke} />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-            </PieChart>
-          </ResponsiveContainer>
+      {/* Ticket Distribution Analysis */}
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-shadow duration-300 flex flex-col items-center mb-8 w-full">
+        <div className="mb-8 w-full">
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Ticket Distribution Analytics</h2>
+          <p className="text-gray-600">Choose your preferred visualization style</p>
         </div>
-
-        {/* Modern Bar Chart */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 hover:shadow-2xl transition-shadow duration-300">
-          <div className="flex items-center mb-6">
-            <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg mr-3">
-              <Bar className="text-white" size={20} />
+        <ViewToggle />
+        <div className="transition-all duration-500 ease-in-out w-full">
+          {activeView === "cards" && <CardsView />}
+          {activeView === "wave" && <WaveView />}
+        </div>
+        <div className="mt-12 bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl p-6 w-full">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-center">
+            <div>
+              <div className="text-2xl font-bold text-blue-600">
+                {(stats.totalTickets ? (stats.resolvedTickets / stats.totalTickets) * 100 : 0).toFixed(1)}%
+              </div>
+              <div className="text-sm text-gray-600">Resolution Rate</div>
             </div>
-            <h2 className="text-xl font-bold text-gray-800">Status Comparison</h2>
+            <div>
+              <div className="text-2xl font-bold text-orange-600">{stats.pendingTickets + stats.inProgressTickets}</div>
+              <div className="text-sm text-gray-600">Active Tickets</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-600">{stats.resolvedTickets}</div>
+              <div className="text-sm text-gray-600">Completed</div>
+            </div>
           </div>
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={statusData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <defs>
-                <linearGradient id="pendingBarGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#2563EB" stopOpacity={0.6} />
-                </linearGradient>
-                <linearGradient id="inProgressBarGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#F59E42" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#D97706" stopOpacity={0.6} />
-                </linearGradient>
-                <linearGradient id="resolvedBarGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22C55E" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#16A34A" stopOpacity={0.6} />
-                </linearGradient>
-                <linearGradient id="revokedBarGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#EF4444" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#B91C1C" stopOpacity={0.6} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="status" axisLine={false} tickLine={false} tick={{ fontSize: 14, fontWeight: 600 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="count" radius={[8, 8, 0, 0]} barSize={60}>
-                {statusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.stroke} strokeWidth={2} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
         </div>
       </div>
     </div>
-  );
+  )
 }

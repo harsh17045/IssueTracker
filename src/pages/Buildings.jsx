@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Building2, AlertCircle } from 'lucide-react';
-import { getAllBuildings } from '../service/adminAuthService';
+import { getAllBuildings, deleteBuilding } from '../service/adminAuthService';
 import { toast } from 'react-toastify';
 import AddBuildingModal from '../components/AddBuildingModal';
 import EditBuildingModal from '../components/EditBuildingModal';
@@ -14,6 +14,7 @@ const Buildings = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [deletingBuildingId, setDeletingBuildingId] = useState(null);
   const buildingsPerPage = 8;
 
   useEffect(() => {
@@ -62,6 +63,34 @@ const Buildings = () => {
     setShowEditModal(false);
     setSelectedBuilding(null);
     fetchBuildings();
+  };
+
+  const handleDeleteBuilding = async (buildingId, buildingName) => {
+    // Show confirmation dialog
+    const isConfirmed = window.confirm(
+      `Are you sure you want to delete "${buildingName}"? This action cannot be undone.`
+    );
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    try {
+      setDeletingBuildingId(buildingId);
+      const result = await deleteBuilding(buildingId);
+      
+      if (result.success) {
+        toast.success(result.message || 'Building deleted successfully');
+        fetchBuildings(); // Refresh the buildings list
+      } else {
+        toast.error(result.message || 'Failed to delete building');
+      }
+    } catch (error) {
+      console.error('Error deleting building:', error);
+      toast.error(error.message || 'Failed to delete building');
+    } finally {
+      setDeletingBuildingId(null);
+    }
   };
 
   if (loading) {
@@ -120,10 +149,19 @@ const Buildings = () => {
                       <Edit2 size={16} className="text-gray-500" />
                     </button>
                     <button
-                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                      // onClick={() => handleDelete(building._id)}
+                      className={`p-1 rounded-full transition-colors ${
+                        deletingBuildingId === building._id
+                          ? 'bg-gray-100 cursor-not-allowed'
+                          : 'hover:bg-gray-100'
+                      }`}
+                      onClick={() => handleDeleteBuilding(building._id, building.name)}
+                      disabled={deletingBuildingId === building._id}
                     >
+                      {deletingBuildingId === building._id ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
+                      ) : (
                       <Trash2 size={16} className="text-red-500" />
+                      )}
                     </button>
                   </div>
                 </div>

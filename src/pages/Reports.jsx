@@ -6,11 +6,15 @@ import { toast } from 'react-toastify';
 const Reports = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [status, setStatus] = useState('all');
+  const [includeComments, setIncludeComments] = useState(false);
 
   const handleGenerateReport = async () => {
     try {
       setIsGenerating(true);
-      const blob = await generateTicketReport();
+      const blob = await generateTicketReport({ startDate, endDate, status, includeComments });
       
       // Create and trigger download
       const url = window.URL.createObjectURL(blob);
@@ -31,6 +35,27 @@ const Reports = () => {
     }
   };
 
+  const handleGenerateExcel = async () => {
+    setIsGeneratingExcel(true);
+    try {
+      const blob = await exportTicketReportExcel({ startDate, endDate, status, includeComments });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ticket_report_${new Date().toLocaleDateString()}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Excel report generated successfully');
+    } catch (error) {
+      console.error('Excel report generation failed:', error);
+      toast.error(error.message || 'Failed to generate Excel report');
+    } finally {
+      setIsGeneratingExcel(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex justify-center py-4 relative overflow-x-hidden">
       {/* Decorative Blurred Blob */}
@@ -46,6 +71,33 @@ const Reports = () => {
           <span className="text-gray-400 text-xs">Last generated: {new Date().toLocaleDateString()}</span>
         </div>
         <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-purple-100 hover:shadow-2xl transition-all duration-200 relative overflow-hidden">
+          {/* Filter Controls */}
+          <div className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex flex-col md:flex-row gap-4 w-full">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
+                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="border rounded px-2 py-1 w-full" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
+                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="border rounded px-2 py-1 w-full" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                <select value={status} onChange={e => setStatus(e.target.value)} className="border rounded px-2 py-1 w-full">
+                  <option value="all">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="revoked">Revoked</option>
+                </select>
+              </div>
+              <div className="flex items-center mt-6 md:mt-0">
+                <input type="checkbox" id="includeComments" checked={includeComments} onChange={e => setIncludeComments(e.target.checked)} className="mr-2" />
+                <label htmlFor="includeComments" className="text-xs font-medium text-gray-700">Include Comments</label>
+              </div>
+            </div>
+          </div>
           {/* Ribbon/Bookmark Tag */}
           <h3 className="text-xl font-semibold text-gray-800 mb-1 flex items-center gap-2">
             <BarChart2 className="text-blue-400" size={22} />
@@ -90,26 +142,7 @@ const Reports = () => {
               )}
             </button>
             <button
-              onClick={async () => {
-                setIsGeneratingExcel(true);
-                try {
-                  const blob = await exportTicketReportExcel();
-                  const url = window.URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `ticket_report_${new Date().toLocaleDateString()}.xlsx`;
-                  document.body.appendChild(a);
-                  a.click();
-                  window.URL.revokeObjectURL(url);
-                  document.body.removeChild(a);
-                  toast.success('Excel report generated successfully');
-                } catch (error) {
-                  console.error('Excel report generation failed:', error);
-                  toast.error(error.message || 'Failed to generate Excel report');
-                } finally {
-                  setIsGeneratingExcel(false);
-                }
-              }}
+              onClick={handleGenerateExcel}
               disabled={isGeneratingExcel}
               className={`w-full flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-base font-medium shadow-sm border border-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2
                 ${isGeneratingExcel

@@ -20,7 +20,6 @@ export const DeptAuthProvider = ({ children }) => {
     // Check for existing token and admin data on mount
     const storedToken = getDeptAdminToken();
     const storedAdminData = getDeptAdminData();
-    
     if (storedToken && storedAdminData) {
       setToken(storedToken);
       setDeptAdmin(storedAdminData);

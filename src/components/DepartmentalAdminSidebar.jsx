@@ -54,8 +54,6 @@ const DepartmentAdminSidebar = ({ isOpen, onClose }) => {
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dept/dashboard' },
     { id: 'tickets', label: 'Department Tickets', icon: Bug, path: '/dept/tickets' },
     { id: 'ticket-assigned', label: 'Ticket Assigned', icon: UserCheck, path: '/dept/ticket-assigned' },
-    { id: 'reports', label: 'Department Reports', icon: BarChart3, path: '/dept/reports' },
-    { id: 'department-info', label: 'Department Info', icon: Building2, path: '/dept/department-info' },
     {
       id: 'profile',
       label: (
@@ -65,11 +63,6 @@ const DepartmentAdminSidebar = ({ isOpen, onClose }) => {
         </div>
       ),
       icon: Shield,
-      hasSubmenu: true,
-      submenu: [
-        { id: 'viewProfile', label: 'View Profile', icon: Users, path: '/dept/profile/view' },
-        { id: 'changePassword', label: 'Change Password', icon: FileText, path: '/dept/profile/change-password' },
-      ],
     },
   ];
 

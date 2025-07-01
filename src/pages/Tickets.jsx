@@ -13,6 +13,9 @@ const Tickets = () => {
   const [currentDepartment, setCurrentDepartment] = useState('');
   const [sortField, setSortField] = useState('createdAt');
   const [sortDirection, setSortDirection] = useState('desc');
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const ticketsPerPage = 5;
 
   const getColorTheme = (index) => {
     const colors = [
@@ -29,6 +32,11 @@ const Tickets = () => {
   useEffect(() => {
     fetchInitialData();
   }, []);
+
+  // Reset page when filters or department change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, currentDepartment]);
 
   const fetchInitialData = async () => {
     try {
@@ -87,6 +95,13 @@ const Tickets = () => {
         return matchesSearch && matchesStatus;
       }))
     : [];
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredTickets.length / ticketsPerPage);
+  const paginatedTickets = filteredTickets.slice(
+    (currentPage - 1) * ticketsPerPage,
+    currentPage * ticketsPerPage
+  );
 
   // Add click handler
   const handleTicketClick = (ticketId) => {
@@ -200,12 +215,12 @@ const Tickets = () => {
                   <tr>
                     <td colSpan="4" className="px-6 py-4 text-center">Loading tickets...</td>
                   </tr>
-                ) : filteredTickets.length === 0 ? (
+                ) : paginatedTickets.length === 0 ? (
                   <tr>
                     <td colSpan="4" className="px-6 py-4 text-center">No tickets found</td>
                   </tr>
                 ) : (
-                  filteredTickets.map((ticket) => (
+                  paginatedTickets.map((ticket) => (
                     <tr 
                       key={ticket._id} 
                       className="hover:bg-gray-50 cursor-pointer"
@@ -234,6 +249,34 @@ const Tickets = () => {
               </tbody>
             </table>
           </div>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 py-4">
+              <button
+                className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i + 1}
+                  className={`px-3 py-1 rounded ${currentPage === i + 1 ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700'}`}
+                  onClick={() => setCurrentPage(i + 1)}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
   );

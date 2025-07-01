@@ -19,9 +19,6 @@ export const setDeptAdminData = (data) => {
 
 export const deptAdminLoginRequest = async (email, password) => {
   try {
-    console.log('Requesting login for:', email);
-    console.log('API URL:', `${API_URL}/login-request`);
-    console.log('Request body:', { email, password });
 
     const response = await fetch(`${API_URL}/login-request`, {
       method: 'POST',
@@ -29,12 +26,10 @@ export const deptAdminLoginRequest = async (email, password) => {
       body: JSON.stringify({ email, password })
     });
     
-    console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+    
     
     const data = await response.json();
-    console.log('Login request response data:', data);
-    
+
     if (!response.ok) {
       console.log('Login request failed:', data);
       return {
@@ -243,6 +238,42 @@ export const updateTicketStatus = async (ticketId, { status, comment }) => {
     return {
       success: false,
       message: error.message || 'Failed to update ticket status'
+    };
+  }
+};
+
+export const getLoggedInDepartmentalAdmin = async () => {
+  try {
+    const token = getDeptAdminToken();
+    if (!token) {
+      return {
+        success: false,
+        message: 'Authentication token not found'
+      };
+    }
+    const response = await fetch(`${API_URL}/my-data`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Failed to fetch departmental admin data'
+      };
+    }
+    return {
+      success: true,
+      data: data,
+      message: 'Departmental admin data fetched successfully'
+    };
+  } catch (error) {
+    console.error('Error in getLoggedInDepartmentalAdmin:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to fetch departmental admin data'
     };
   }
 };
