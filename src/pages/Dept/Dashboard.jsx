@@ -1,12 +1,11 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
-import { Building2, Ticket, Clock, CheckCircle2, XCircle, Activity, BarChart3, Bell } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Building2, Ticket, Clock, CheckCircle2, XCircle, Activity, BarChart3, Bell, X } from "lucide-react"
 import { useDeptAuth } from "../../context/DeptAuthContext"
 import { getDepartmentTickets, getLoggedInDepartmentalAdmin } from "../../service/deptAuthService"
 import { useNavigate } from "react-router-dom"
 import React from "react"
-import io from "socket.io-client"
 
 export default function DepartmentDashboard() {
   const { deptAdmin: contextDeptAdmin } = useDeptAuth()
@@ -16,9 +15,6 @@ export default function DepartmentDashboard() {
   const [error, setError] = useState(null)
   const navigate = useNavigate()
   const [activeView, setActiveView] = useState("cards")
-  const [notification, setNotification] = useState(null)
-  const [connectionStatus, setConnectionStatus] = useState("disconnected")
-  const socketRef = useRef(null)
 
   // Calculate stats from tickets data
   const stats = {
@@ -33,9 +29,9 @@ export default function DepartmentDashboard() {
   const recentTickets = tickets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5)
 
   const ticketData = [
-    {
+    { 
       name: "Pending",
-      value: stats.pendingTickets,
+      value: stats.pendingTickets, 
       color: "#3B82F6",
       gradient: "from-blue-400 to-blue-600",
       icon: Clock,
@@ -45,7 +41,7 @@ export default function DepartmentDashboard() {
     },
     {
       name: "In Progress",
-      value: stats.inProgressTickets,
+      value: stats.inProgressTickets, 
       color: "#F59E0B",
       gradient: "from-amber-400 to-orange-500",
       icon: Activity,
@@ -55,7 +51,7 @@ export default function DepartmentDashboard() {
     },
     {
       name: "Resolved",
-      value: stats.resolvedTickets,
+      value: stats.resolvedTickets, 
       color: "#10B981",
       gradient: "from-emerald-400 to-green-500",
       icon: CheckCircle2,
@@ -65,7 +61,7 @@ export default function DepartmentDashboard() {
     },
     {
       name: "Revoked",
-      value: stats.revokedTickets,
+      value: stats.revokedTickets, 
       color: "#EF4444",
       gradient: "from-red-400 to-red-600",
       icon: XCircle,
@@ -101,137 +97,6 @@ export default function DepartmentDashboard() {
     fetchFullAdmin()
   }, [])
 
-  // WebSocket connection effect - runs after we have full admin data
-  useEffect(() => {
-    if (!deptAdmin || !deptAdmin.department) {
-      console.log("DeptAdmin or department not available yet, skipping WebSocket setup")
-      return
-    }
-
-    // Clean up existing connection
-    if (socketRef.current) {
-      socketRef.current.disconnect()
-      socketRef.current = null
-    }
-
-    console.log("Setting up WebSocket connection for admin:", deptAdmin)
-
-    const socket = io("http://localhost:5000", {
-      transports: ["polling", "websocket"],
-      withCredentials: true,
-      timeout: 20000,
-    })
-
-    socketRef.current = socket
-
-    // Connection event handlers
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket.id)
-      setConnectionStatus("connected")
-
-      // Determine room IDs to join
-      const roomsToJoin = []
-
-      // Always join the department ID room (primary room for notifications)
-      if (typeof deptAdmin.department === "object" && deptAdmin.department._id) {
-        roomsToJoin.push(deptAdmin.department._id.toString())
-      }
-
-      // Also join department name room for compatibility
-      const departmentName = typeof deptAdmin.department === "object" ? deptAdmin.department.name : deptAdmin.department
-
-      if (departmentName) {
-        roomsToJoin.push(`department-${departmentName.toLowerCase()}`)
-      }
-
-      // For Network Engineers, also join location-specific rooms
-      if (deptAdmin.isNetworkEngineer && deptAdmin.locations?.length > 0) {
-        deptAdmin.locations.forEach((location) => {
-          const buildingId = typeof location.building === "object" ? location.building._id : location.building
-          if (buildingId && location.floor !== undefined) {
-            roomsToJoin.push(`network-${buildingId}-${location.floor}`)
-          }
-        })
-      }
-
-      console.log("Joining rooms:", roomsToJoin)
-
-      // Join all relevant rooms
-      roomsToJoin.forEach((room) => {
-        socket.emit("join-room", room)
-      })
-
-      // Test echo
-      socket.emit("test-echo", "hello from dashboard frontend")
-    })
-
-    socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error)
-      setConnectionStatus("error")
-    })
-
-    socket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason)
-      setConnectionStatus("disconnected")
-    })
-
-    socket.on("room-joined", (data) => {
-      console.log("Successfully joined room:", data)
-      setConnectionStatus("connected-room")
-    })
-
-    socket.on("test-echo", (msg) => {
-      console.log("Echo from backend:", msg)
-    })
-
-    // New comment notification handler
-    socket.on("new-comment", (data) => {
-      console.log("Received new-comment event:", data)
-
-      setNotification({
-        message: `New comment from ${data.employeeName || "Employee"} on: ${data.title}`,
-        ticketId: data.ticketId,
-        timestamp: new Date().toISOString(),
-      })
-
-      // Auto-dismiss notification after 10 seconds
-      setTimeout(() => {
-        setNotification(null)
-      }, 10000)
-
-      // Refresh tickets to show updated data
-      fetchTickets()
-    })
-
-    // New ticket notification handler
-    socket.on("new-ticket", (data) => {
-      console.log("Received new-ticket event:", data)
-
-      setNotification({
-        message: `New ticket raised: ${data.title} (Priority: ${data.priority})`,
-        ticketId: data.ticketId,
-        timestamp: new Date().toISOString(),
-      })
-
-      // Auto-dismiss notification after 10 seconds
-      setTimeout(() => {
-        setNotification(null)
-      }, 10000)
-
-      // Refresh tickets to show updated data
-      fetchTickets()
-    })
-
-    return () => {
-      if (socketRef.current) {
-        console.log("Cleaning up socket connection")
-        socketRef.current.disconnect()
-        socketRef.current = null
-      }
-      setConnectionStatus("disconnected")
-    }
-  }, [deptAdmin]) // Dependency on full deptAdmin object
-
   // Fetch tickets
   useEffect(() => {
     fetchTickets()
@@ -241,9 +106,9 @@ export default function DepartmentDashboard() {
     try {
       setLoading(true)
       setError(null)
-
+      
       const result = await getDepartmentTickets()
-
+      
       if (result.success) {
         setTickets(result.tickets)
       } else {
@@ -255,25 +120,6 @@ export default function DepartmentDashboard() {
     } finally {
       setLoading(false)
     }
-  }
-
-  // Connection status indicator
-  const ConnectionStatus = () => {
-    const statusConfig = {
-      connected: { color: "bg-green-500", text: "Connected", icon: "🟢" },
-      "connected-room": { color: "bg-green-500", text: "Connected & Joined Room", icon: "✅" },
-      disconnected: { color: "bg-red-500", text: "Disconnected", icon: "🔴" },
-      error: { color: "bg-yellow-500", text: "Connection Error", icon: "⚠️" },
-    }
-
-    const config = statusConfig[connectionStatus] || statusConfig.disconnected
-
-    return (
-      <div className="flex items-center gap-2 text-sm">
-        <div className={`w-2 h-2 rounded-full ${config.color}`}></div>
-        <span className="text-gray-600">WebSocket: {config.text}</span>
-      </div>
-    )
   }
 
   function ViewToggle() {
@@ -395,33 +241,7 @@ export default function DepartmentDashboard() {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      {/* Notification Toast */}
-      {notification && (
-        <div className="fixed top-6 right-6 z-50 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-4 animate-slide-in border-l-4 border-blue-300">
-          <Bell className="text-blue-200" size={20} />
-          <div className="flex-1">
-            <p className="font-medium">{notification.message}</p>
-            <p className="text-xs text-blue-200 mt-1">{new Date(notification.timestamp).toLocaleTimeString()}</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              className="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30 transition"
-              onClick={() => {
-                setNotification(null)
-                navigate(`/dept/tickets/${notification.ticketId}`)
-              }}
-            >
-              View
-            </button>
-            <button
-              className="bg-white/20 px-3 py-1 rounded text-sm hover:bg-white/30 transition"
-              onClick={() => setNotification(null)}
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* Error Display */}
       {error && (
@@ -429,36 +249,16 @@ export default function DepartmentDashboard() {
           <p className="text-red-600">Error: {error}</p>
         </div>
       )}
-
+      
       {/* Welcome Section with Connection Status */}
       <div className="mb-8 flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
           Welcome, <span>{deptAdmin?.name || "Department Admin"}</span>
         </h1>
-        <ConnectionStatus />
+        
       </div>
 
       {/* Debug Info */}
-      {deptAdmin && (
-        <div className="mb-4 p-3 bg-gray-100 rounded-lg text-sm">
-          <p>
-            <strong>Department:</strong>{" "}
-            {typeof deptAdmin.department === "object" ? deptAdmin.department.name : deptAdmin.department}
-          </p>
-          <p>
-            <strong>Department ID:</strong>{" "}
-            {typeof deptAdmin.department === "object" ? deptAdmin.department._id : "N/A"}
-          </p>
-          <p>
-            <strong>Is Network Engineer:</strong> {deptAdmin.isNetworkEngineer ? "Yes" : "No"}
-          </p>
-          {deptAdmin.locations && (
-            <p>
-              <strong>Locations:</strong> {deptAdmin.locations.length}
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Network Engineer Locations Section */}
       {deptAdmin?.isNetworkEngineer && deptAdmin.locations?.length > 0 && (
@@ -573,7 +373,7 @@ export default function DepartmentDashboard() {
             </div>
             <h2 className="text-xl font-bold text-gray-800">Recent Tickets</h2>
           </div>
-          <button
+          <button 
             onClick={fetchTickets}
             className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
           >
@@ -665,7 +465,7 @@ export default function DepartmentDashboard() {
             <div>
               <div className="text-2xl font-bold text-orange-600">{stats.pendingTickets + stats.inProgressTickets}</div>
               <div className="text-sm text-gray-600">Active Tickets</div>
-            </div>
+          </div>
             <div>
               <div className="text-2xl font-bold text-green-600">{stats.resolvedTickets}</div>
               <div className="text-sm text-gray-600">Completed</div>

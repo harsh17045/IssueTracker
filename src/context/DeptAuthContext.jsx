@@ -44,6 +44,8 @@ export const DeptAuthProvider = ({ children }) => {
     token,
     deptAdmin,
     loading,
+    setDeptAdmin,
+    setLoading,
     login,
     logout,
     isAuthenticated: !!token

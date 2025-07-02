@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import AuthPage from './components/authPage';
 import { AdminAuthProvider } from './context/AdminAuthContext';
 import { DeptAuthProvider } from './context/DeptAuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import DeptProtectedRoute from './components/DeptProtectedRoute';
 import AdminDashboard from './components/AdminDashboard';
@@ -21,6 +22,7 @@ import DepartmentTickets from './pages/Dept/Tickets';
 import DepartmentTicketDetail from './pages/Dept/TicketDetail';
 import TicketAssigned from './pages/Dept/TicketAssigned';
 import DepartmentLayout from './layout/DepartmentLayout';
+import { DeptSocketProvider } from './context/DeptSocketContext';
 
 // Admin Routes Component
 const AdminRoutes = () => {
@@ -97,9 +99,13 @@ const App = () => {
           path="/dept"
           element={
             <DeptAuthProvider>
-              <DeptProtectedRoute>
-                <DepartmentLayout />
-              </DeptProtectedRoute>
+              <NotificationProvider>
+                <DeptSocketProvider>
+                  <DeptProtectedRoute>
+                    <DepartmentLayout />
+                  </DeptProtectedRoute>
+                </DeptSocketProvider>
+              </NotificationProvider>
             </DeptAuthProvider>
           }
         >
