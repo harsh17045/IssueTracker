@@ -1,7 +1,6 @@
 const API_URL = "http://localhost:5000/api/employees";
 
 export const registerNewUser = async (userData) => {
-  console.log("User data in authService:", userData);
   try {
     const response = await fetch(`${API_URL}/register`, {
       method: "POST",
@@ -12,7 +11,7 @@ export const registerNewUser = async (userData) => {
     });
 
     const newResponse = await response.json();
-    console.log("Response:", newResponse);
+
 
     if (!response.ok) {
       throw new Error(newResponse.message || "Registration failed");
@@ -26,7 +25,6 @@ export const registerNewUser = async (userData) => {
 };
 
 export const loginUser = async (userData) => {
-  console.log("User data in authService:", userData);
   const response = await fetch(`${API_URL}/login-request`, {
     method: "POST",
     headers: {
@@ -37,8 +35,15 @@ export const loginUser = async (userData) => {
   return response;
 };
 
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {
+    return {};
+  }
+}
+
 export const verifyUser = async (userData) => {
-  console.log("User data in authService:", userData);
   const response = await fetch(`${API_URL}/verify-login`, {
     method: "POST",
     headers: {
@@ -49,6 +54,16 @@ export const verifyUser = async (userData) => {
   const data = await response.json();
 
   if (data.token && data.employee) {
+    // Extract id from token if not present in employee
+    let id = data.employee._id || data.employee.id;
+    if (!id) {
+      const payload = parseJwt(data.token);
+      id = payload.id || payload._id || payload.userId;
+    }
+    const employeeWithId = {
+      ...data.employee,
+      id
+    };
     // Calculate midnight IST
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000; // IST offset from UTC (5 hours 30 minutes)
@@ -58,7 +73,7 @@ export const verifyUser = async (userData) => {
 
     // Store token and employee data in localStorage
     localStorage.setItem("token", data.token);
-    localStorage.setItem("employee", JSON.stringify(data.employee));
+    localStorage.setItem("employee", JSON.stringify(employeeWithId));
     localStorage.setItem("tokenExpiry", istMidnight.getTime().toString());
   }
 
@@ -90,7 +105,6 @@ export const raiseTicket = async (ticketData, file) => {
       body: formData,
     });
 
-    console.log("Raise ticket response:", response);
     const data = await response.json();
     
     if (!response.ok) {
@@ -120,7 +134,6 @@ export const getMyTickets = async () => {
     });
     
     const data = await response.json();
-    console.log(data);
     if (!response.ok) {
       throw new Error(data.message || 'Failed to fetch tickets');
     }
@@ -184,7 +197,6 @@ export const updateProfile = async (profileData, isMultipart = false) => {
       options.body = JSON.stringify(profileData);
     }
 
-    console.log("Sending profile data:", isMultipart ? "FormData" : profileData);
 
     const response = await fetch(`${API_URL}/update-profile`, options);
 
@@ -400,8 +412,6 @@ export const getAllBuildings = async () => {
         'Authorization': `Bearer ${token}`  // Add auth token
       }
     });
-
-    console.log('Buildings API Response:', response); // Debug log
 
     if (!response.ok) {
       throw new Error('Failed to fetch buildings');

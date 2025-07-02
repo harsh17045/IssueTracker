@@ -16,45 +16,43 @@ import TicketDetail from './components/TicketDetail';
 
 const App = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Auth Routes */}
-          <Route path="/login" element={<AuthPage1 />} />
-          <Route path="/register" element={<AuthPage1 />} />
-          <Route path="/logout" element={<Logout />} />
+    <Router>
+      <Routes>
+        {/* Auth Routes */}
+        <Route path="/login" element={<AuthPage1 />} />
+        <Route path="/register" element={<AuthPage1 />} />
+        <Route path="/logout" element={<Logout />} />
 
-          {/* Protected Routes */}
-          <Route 
-            path="/" 
-            element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<HomePage />} />
-            <Route path="raise-ticket" element={<RaiseTicket />} />
-            <Route path="my-tickets" element={<MyTicket />} />
-            <Route path="my-tickets/:ticketId" element={<TicketDetail />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="change-password" element={<ChangePassword />} />
-          </Route>
-        </Routes>
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-      </Router>
-    </AuthProvider>
+        {/* Protected Routes */}
+        <Route 
+          path="/" 
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<HomePage />} />
+          <Route path="raise-ticket" element={<RaiseTicket />} />
+          <Route path="my-tickets" element={<MyTicket />} />
+          <Route path="my-tickets/:ticketId" element={<TicketDetail />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="change-password" element={<ChangePassword />} />
+        </Route>
+      </Routes>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+    </Router>
   );
 };
 
