@@ -19,6 +19,7 @@ import TicketDetail from './pages/TicketDetail';
 import AdminLayout from './layout/AdminLayout';
 import DeptDashboard from './pages/Dept/Dashboard';
 import DepartmentTickets from './pages/Dept/Tickets';
+import DeptReports from './pages/Dept/Reports';
 import DepartmentTicketDetail from './pages/Dept/TicketDetail';
 import TicketAssigned from './pages/Dept/TicketAssigned';
 import DepartmentLayout from './layout/DepartmentLayout';
@@ -124,6 +125,10 @@ const App = () => {
           <Route 
             path="tickets/:ticketId" 
             element={<DepartmentTicketDetail />} 
+          />
+          <Route 
+            path="reports" 
+            element={<DeptReports />} 
           />
           <Route 
             path="ticket-assigned" 

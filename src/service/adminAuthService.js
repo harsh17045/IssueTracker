@@ -1,5 +1,7 @@
 const API_URL = "http://localhost:5000/api/admin";
 
+const ALL_STATUSES = ['pending', 'in_progress', 'resolved', 'revoked'];
+
 export const adminLogin = async (credentials) => {
   try {
     const response = await fetch(`${API_URL}/login`, {
@@ -179,7 +181,8 @@ export const deleteDepartment = async (deptId) => {
 export const generateTicketReport = async ({
   startDate,
   endDate,
-  status = "all",
+  status = ["all"],
+  departments = [],
   includeComments = false
 } = {}) => {
   try {
@@ -187,30 +190,39 @@ export const generateTicketReport = async ({
     if (!token) {
       throw new Error('No authentication token found');
     }
-
     // Build query string
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
-    if (status) params.append('status', status);
+    let statusToSend = status;
+    if (Array.isArray(status) && status.length === 1 && status[0] === 'all') {
+      statusToSend = ALL_STATUSES;
+    }
+    if (statusToSend && Array.isArray(statusToSend)) {
+      params.append('status', statusToSend.join(','));
+    } else if (statusToSend) {
+      params.append('status', statusToSend);
+    }
+    if (departments && Array.isArray(departments)) {
+      params.append('departments', departments.join(','));
+    } else if (departments) {
+      params.append('departments', departments);
+    }
     params.append('includeComments', includeComments ? 'true' : 'false');
-
     const response = await fetch(`${API_URL}/export-report-pdf?${params.toString()}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
       }
     });
-
     if (!response.ok) {
-      throw new Error('Failed to generate report');
+      throw new Error('Failed to generate PDF report');
     }
-
     // Return the blob for PDF download
     const blob = await response.blob();
     return blob;
   } catch (error) {
-    console.error('Error generating report:', error);
+    console.error('Error generating PDF report:', error);
     throw error;
   }
 };
@@ -376,7 +388,8 @@ export const getAttachment = async (filename) => {
 export const exportTicketReportExcel = async ({
   startDate,
   endDate,
-  status = "all",
+  status = ["all"],
+  departments = [],
   includeComments = false
 } = {}) => {
   try {
@@ -384,25 +397,34 @@ export const exportTicketReportExcel = async ({
     if (!token) {
       throw new Error('No authentication token found');
     }
-
     // Build query string
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
-    if (status) params.append('status', status);
+    let statusToSend = status;
+    if (Array.isArray(status) && status.length === 1 && status[0] === 'all') {
+      statusToSend = ALL_STATUSES;
+    }
+    if (statusToSend && Array.isArray(statusToSend)) {
+      params.append('status', statusToSend.join(','));
+    } else if (statusToSend) {
+      params.append('status', statusToSend);
+    }
+    if (departments && Array.isArray(departments)) {
+      params.append('departments', departments.join(','));
+    } else if (departments) {
+      params.append('departments', departments);
+    }
     params.append('includeComments', includeComments ? 'true' : 'false');
-
     const response = await fetch(`${API_URL}/export-report-excel?${params.toString()}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
       }
     });
-
     if (!response.ok) {
       throw new Error('Failed to generate Excel report');
     }
-
     // Return the blob for Excel download
     const blob = await response.blob();
     return blob;
@@ -494,6 +516,31 @@ export const getAvailableNetworkEngineerFloors = async () => {
     return data.availableAssignments || [];
   } catch (error) {
     console.error('Error fetching available network engineer floors:', error);
+    throw error;
+  }
+};
+
+export const updateNetworkEngineerLocations = async (adminId, locations) => {
+  try {
+    const token = getAdminToken();
+    if (!token) throw new Error('No authentication token found');
+    console.log("locations", locations);
+    const response = await fetch(`${API_URL}/update-network-locations/${adminId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ locations }),
+    });
+    const data = await response.json();
+    console.log('Update network engineer locations response:', data);
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to update locations');
+    }
+    return data;
+  } catch (error) {
+    console.error('Error updating network engineer locations:', error);
     throw error;
   }
 };

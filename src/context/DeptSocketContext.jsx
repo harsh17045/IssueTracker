@@ -28,6 +28,7 @@ export const DeptSocketProvider = ({ children }) => {
     socketRef.current = socket;
 
     socket.on("connect", () => {
+      console.log("Socket connected successfully:", socket.id);
       // Join rooms logic (same as in DepartmentDashboard)
       const roomsToJoin = [];
       if (typeof deptAdmin.department === "object" && deptAdmin.department._id) {
@@ -53,11 +54,18 @@ export const DeptSocketProvider = ({ children }) => {
       });
     });
 
+    socket.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason);
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+    });
+
     // Notification handlers
     socket.on("new-ticket", (data) => {
-      console.log("Received new-ticket event:", data);
+      console.log("[SOCKET] Received new-ticket event:", data);
       notificationSound.play();
-      console.log("About to show toast for new ticket");
       toast.info(
         `New ticket: ${data.title} (Priority: ${data.priority})`,
         {
@@ -65,7 +73,6 @@ export const DeptSocketProvider = ({ children }) => {
           position: "top-right",
         }
       );
-      console.log("Toast for new ticket should have shown");
       addNotification({
         type: "new-ticket",
         title: "New Ticket Raised",
@@ -77,9 +84,8 @@ export const DeptSocketProvider = ({ children }) => {
       });
     });
     socket.on("new-comment", (data) => {
-      console.log("Received new-comment event:", data);
+      console.log("[SOCKET] Received new-comment event:", data);
       notificationSound.play();
-      console.log("About to show toast for new comment");
       toast.info(
         data.employeeName
           ? `New comment from ${data.employeeName} on: ${data.title}`
@@ -93,6 +99,64 @@ export const DeptSocketProvider = ({ children }) => {
         type: "new-comment",
         title: "New Comment",
         message: `New comment from ${data.employeeName || "Employee"} on: ${data.title}`,
+        ticketId: data.ticketId,
+      });
+    });
+
+    // Handle ticket revoked event
+    socket.on("ticket-revoked", (data) => {
+      console.log("[SOCKET] Received ticket-revoked event:", data);
+      notificationSound.play();
+      toast.info(
+        `Ticket revoked: ${data.title}`,
+        {
+          autoClose: 5000,
+          position: "top-right",
+        }
+      );
+      addNotification({
+        type: "ticket-revoked",
+        title: "Ticket Revoked",
+        message: data.message || `Ticket titled "${data.title}" has been revoked by the employee.`,
+        ticketId: data.ticketId,
+      });
+    });
+
+    // Handle status update event
+    socket.on("status-update", (data) => {
+      console.log("[SOCKET] Received status-update event:", data);
+      notificationSound.play();
+      toast.info(
+        `Ticket status updated: ${data.title} - ${data.status}`,
+        {
+          autoClose: 5000,
+          position: "top-right",
+        }
+      );
+      addNotification({
+        type: "status-update",
+        title: "Status Updated",
+        message: `Ticket "${data.title}" status changed to "${data.status}"`,
+        ticketId: data.ticketId,
+        status: data.status,
+      });
+    });
+
+    // Handle ticket updated event
+    socket.on("ticket-updated", (data) => {
+      console.log("[SOCKET] Received ticket-updated event:", data);
+      notificationSound.play();
+      toast.info(
+        `Ticket updated: ${data.title}`,
+        {
+          autoClose: 5000,
+          position: "top-right",
+        }
+      );
+      addNotification({
+        type: "ticket-updated",
+        title: "Ticket Updated",
+        message: `Ticket "${data.title}" has been updated`,
         ticketId: data.ticketId,
       });
     });

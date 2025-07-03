@@ -1,5 +1,7 @@
 const API_URL ='http://localhost:5000/api/dept-admin';
 
+const ALL_STATUSES = ['pending', 'in_progress', 'resolved', 'revoked'];
+
 export const getDeptAdminToken = () => {
   return localStorage.getItem('deptAdminToken');
 };
@@ -204,7 +206,7 @@ export const getDepartmentAttachment = async (filename) => {
   }
 };
 
-export const updateTicketStatus = async (ticketId, { status, comment }) => {
+export const updateTicketStatus = async (ticketId, { status, comment }, attachmentFile) => {
   try {
     const token = getDeptAdminToken();
     if (!token) {
@@ -213,15 +215,30 @@ export const updateTicketStatus = async (ticketId, { status, comment }) => {
         message: 'Authentication token not found'
       };
     }
-    const response = await fetch(`${API_URL}/update-ticket/${ticketId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ status, comment })
-    });
-    const data = await response.json();
+    let response, data;
+    if (attachmentFile) {
+      const formData = new FormData();
+      if (status) formData.append('status', status);
+      if (comment) formData.append('comment', comment);
+      formData.append('attachment', attachmentFile);
+      response = await fetch(`${API_URL}/update-ticket/${ticketId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+    } else {
+      response = await fetch(`${API_URL}/update-ticket/${ticketId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status, comment })
+      });
+    }
+    data = await response.json();
     if (!response.ok) {
       return {
         success: false,
@@ -275,5 +292,93 @@ export const getLoggedInDepartmentalAdmin = async () => {
       success: false,
       message: error.message || 'Failed to fetch departmental admin data'
     };
+  }
+};
+
+export const generateDeptTicketReport = async ({
+  startDate,
+  endDate,
+  status = ["all"],
+  includeComments = false
+} = {}) => {
+  try {
+    const token = getDeptAdminToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    // Build query string
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    let statusToSend = status;
+    if (Array.isArray(status) && status.length === 1 && status[0] === 'all') {
+      statusToSend = ALL_STATUSES;
+    }
+    if (statusToSend && Array.isArray(statusToSend)) {
+      params.append('status', statusToSend.join(','));
+    } else if (statusToSend) {
+      params.append('status', statusToSend);
+    }
+    params.append('includeComments', includeComments ? 'true' : 'false');
+    const response = await fetch(`${API_URL}/export-pdf?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      }
+    });
+    if (!response.ok) {
+      throw new Error('Failed to generate PDF report');
+    }
+    // Return the blob for PDF download
+    const blob = await response.blob();
+    return blob;
+  } catch (error) {
+    console.error('Error generating PDF report:', error);
+    throw error;
+  }
+};
+
+export const exportDeptTicketReportExcel = async ({
+  startDate,
+  endDate,
+  status = ["all"],
+  includeComments = false
+} = {}) => {
+  try {
+    const token = getDeptAdminToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    // Build query string
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    let statusToSend = status;
+    if (Array.isArray(status) && status.length === 1 && status[0] === 'all') {
+      statusToSend = ALL_STATUSES;
+    }
+    if (statusToSend && Array.isArray(statusToSend)) {
+      params.append('status', statusToSend.join(','));
+    } else if (statusToSend) {
+      params.append('status', statusToSend);
+    }
+    params.append('includeComments', includeComments ? 'true' : 'false');
+    console.log(params.toString());
+    const response = await fetch(`${API_URL}/export-excel?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      }
+    });
+    console.log(response);
+    if (!response.ok) {
+      throw new Error('Failed to generate Excel report');
+    }
+    // Return the blob for Excel download
+    const blob = await response.blob();
+    return blob;
+  } catch (error) {
+    console.error('Error generating Excel report:', error);
+    throw error;
   }
 };
