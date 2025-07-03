@@ -59,6 +59,10 @@ const TicketDetail = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isRevoking, setIsRevoking] = useState(false);
+  const [commentAttachment, setCommentAttachment] = useState(null);
+  const [previewedCommentIdx, setPreviewedCommentIdx] = useState(null);
+  const [previewedCommentUrl, setPreviewedCommentUrl] = useState(null);
+  const [previewedCommentType, setPreviewedCommentType] = useState(null);
 
   useEffect(() => {
     const fetchTicketDetails = async () => {
@@ -66,6 +70,7 @@ const TicketDetail = () => {
         setLoading(true);
         const tickets = await getMyTickets();
         const foundTicket = tickets.find(t => t._id === ticketId);
+        console.log(foundTicket);
         if (!foundTicket) throw new Error('Ticket not found');
         setTicket(foundTicket);
       } catch (error) {
@@ -168,15 +173,47 @@ const TicketDetail = () => {
     }));
   };
 
+  const handleCommentAttachmentPreview = async (attachmentName, idx) => {
+    if (previewedCommentIdx === idx) {
+      if (previewedCommentUrl) window.URL.revokeObjectURL(previewedCommentUrl);
+      setPreviewedCommentIdx(null);
+      setPreviewedCommentUrl(null);
+      setPreviewedCommentType(null);
+      return;
+    }
+    try {
+      const response = await getAttachment(attachmentName);
+      const blob = await response.blob();
+      if (!blob || blob.size === 0) {
+        toast.error('Attachment is empty or could not be loaded.');
+        return;
+      }
+      const url = window.URL.createObjectURL(blob);
+      // Determine file type
+      let type = 'unsupported';
+      const extension = attachmentName.split('.').pop().toLowerCase();
+      if (["jpg","jpeg","png","gif","bmp"].includes(extension)) {
+        type = 'image';
+      } else if (extension === 'pdf') {
+        type = 'pdf';
+      }
+      setPreviewedCommentIdx(idx);
+      setPreviewedCommentUrl(url);
+      setPreviewedCommentType(type);
+    } catch {
+      toast.error('Failed to fetch attachment');
+    }
+  };
+
   const handleAddComment = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
-
+    if (!newComment.trim() && !commentAttachment) return;
     try {
       setIsSubmittingComment(true);
-      const updatedComments = await commentOnTicket(ticketId, newComment);
+      const updatedComments = await commentOnTicket(ticketId, newComment, commentAttachment);
       setTicket(prev => ({ ...prev, comments: updatedComments }));
       setNewComment('');
+      setCommentAttachment(null);
       toast.success('Comment added successfully');
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -302,6 +339,19 @@ const TicketDetail = () => {
                   <Building2 size={16} className="text-gray-400" />
                   <span className="text-gray-900">{ticket.to_department?.name || ticket.to_department}</span>
                 </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Assigned to</h3>
+                {ticket.assigned_to ? (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-gray-900 font-medium">{ticket.assigned_to.name || ticket.assigned_to.email || ticket.assigned_to}</span>
+                    {ticket.assigned_to.email && (
+                      <span className="text-xs text-gray-500">{ticket.assigned_to.email}</span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-gray-500">Unassigned</span>
+                )}
               </div>
             </div>
             <div className="space-y-4">
@@ -459,6 +509,79 @@ const TicketDetail = () => {
                     <span className="text-xs text-gray-500">{new Date(comment.at).toLocaleString()}</span>
                   </div>
                   <p className="text-gray-700">{comment.text}</p>
+                  {comment.attachment && (
+                    <div className="mt-2 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-gray-400" />
+                        <span className="text-xs text-gray-700">{formatAttachmentName(comment.attachment)}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCommentAttachmentPreview(comment.attachment, idx)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <Eye size={14} /> Preview
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const response = await getAttachment(comment.attachment);
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = comment.attachment;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              window.URL.revokeObjectURL(url);
+                            } catch {
+                              toast.error('Failed to download attachment');
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+                        >
+                          <Download size={14} /> Download
+                        </button>
+                      </div>
+                      {previewedCommentIdx === idx && previewedCommentUrl && (
+                        <div className="mt-2 p-2 border border-gray-200 rounded-lg">
+                          {previewedCommentType === 'image' && (
+                            <div className="text-center">
+                              <img
+                                src={previewedCommentUrl}
+                                alt="Attachment"
+                                className="max-w-full h-auto rounded-lg border border-gray-200 mx-auto"
+                                style={{ maxHeight: '300px' }}
+                              />
+                            </div>
+                          )}
+                          {previewedCommentType === 'pdf' && (
+                            <div className="text-center">
+                              <iframe
+                                src={previewedCommentUrl}
+                                title="Attachment PDF"
+                                className="w-full h-64 border border-gray-200 rounded-lg"
+                              />
+                            </div>
+                          )}
+                          {previewedCommentType === 'unsupported' && (
+                            <div className="text-center">
+                              <p className="text-sm text-red-600 mb-2">
+                                This file type is not supported for preview.
+                              </p>
+                              <div className="w-24 h-24 bg-gray-100 rounded-lg mx-auto flex items-center justify-center">
+                                <FileText size={24} className="text-gray-400" />
+                              </div>
+                              <p className="text-xs text-gray-500 mt-2">
+                                Please download the file to view it.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -474,6 +597,12 @@ const TicketDetail = () => {
               placeholder="Add a comment..."
               disabled={isSubmittingComment}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent bg-gray-100"
+            />
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              onChange={event => setCommentAttachment(event.target.files[0] || null)}
+              className="block text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-gray-100 file:text-gray-700 mt-2"
             />
             <button
               type="submit"

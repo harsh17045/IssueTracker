@@ -39,7 +39,7 @@ function parseJwt(token) {
   try {
     return JSON.parse(atob(token.split('.')[1]));
   } catch (e) {
-    return {};
+    return {e};
   }
 }
 
@@ -448,18 +448,32 @@ export const getAttachment = async (filename) => {
   }
 };
 
-export const commentOnTicket = async (ticketId, commentText) => {
+export const commentOnTicket = async (ticketId, commentText, attachmentFile) => {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${API_URL}/comment-ticket/${ticketId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ commentText }),
-    });
-    const data = await response.json();
+    let response, data;
+    if (attachmentFile) {
+      const formData = new FormData();
+      formData.append('commentText', commentText);
+      formData.append('attachment', attachmentFile);
+      response = await fetch(`${API_URL}/comment-ticket/${ticketId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+    } else {
+      response = await fetch(`${API_URL}/comment-ticket/${ticketId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ commentText }),
+      });
+    }
+    data = await response.json();
     if (!response.ok) {
       throw new Error(data.message || "Failed to add comment");
     }
