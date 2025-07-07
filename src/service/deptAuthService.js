@@ -382,3 +382,41 @@ export const exportDeptTicketReportExcel = async ({
     throw error;
   }
 };
+
+export const getAssignedTickets = async () => {
+  try {
+    const token = getDeptAdminToken();
+    if (!token) {
+      return {
+        success: false,
+        message: 'Authentication token not found'
+      };
+    }
+    const response = await fetch(`${API_URL}/get-assigned-tickets`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    console.log("Data",data)
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Failed to fetch assigned tickets'
+      };
+    }
+    return {
+      success: true,
+      tickets: data.tickets,
+      message: 'Assigned tickets fetched successfully'
+    };
+  } catch (error) {
+    console.error('Error in getAssignedTickets:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to fetch assigned tickets'
+    };
+  }
+};

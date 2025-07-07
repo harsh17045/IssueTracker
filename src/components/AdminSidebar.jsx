@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Bug, FileText, BarChart3, Settings, LogOut, ChevronDown, Shield, Building2, UserCog } from 'lucide-react';
+import { Home, Users, Bug, FileText, BarChart3, Settings, LogOut, ChevronDown, Shield, Building2, UserCog, Package } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { toast } from 'react-toastify';
@@ -57,6 +57,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     { id: 'departments', label: 'Departments', icon: FileText, path: '/admin/departments' },
     { id: 'buildings', label: 'Buildings', icon: Building2, path: '/admin/buildings' },
     { id: 'dept-admins', label: 'Departmental Admins', icon: UserCog, path: '/admin/departmental-admins' },
+    { id: 'inventory', label: 'Inventory', icon: Package, path: '/admin/inventory' },
     { id: 'reports', label: 'Reports', icon: BarChart3, path: '/admin/reports' },
     {
       id: 'profile',

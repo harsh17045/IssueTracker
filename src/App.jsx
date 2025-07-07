@@ -24,6 +24,8 @@ import DepartmentTicketDetail from './pages/Dept/TicketDetail';
 import TicketAssigned from './pages/Dept/TicketAssigned';
 import DepartmentLayout from './layout/DepartmentLayout';
 import { DeptSocketProvider } from './context/DeptSocketContext';
+import Inventory from './pages/Dept/Inventory';
+import InventoryProtectedRoute from './components/InventoryProtectedRoute';
 
 // Admin Routes Component
 const AdminRoutes = () => {
@@ -41,6 +43,7 @@ const AdminRoutes = () => {
             <Route path="/reports" element={<Reports />} />
             <Route path="/buildings" element={<Building />} />
             <Route path="/departmental-admins" element={<DepartmentalAdmins />} />
+            <Route path="/inventory" element={<Inventory />} />
             <Route path="/tickets/:ticketId" element={<TicketDetail />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>
@@ -133,6 +136,14 @@ const App = () => {
           <Route 
             path="ticket-assigned" 
             element={<TicketAssigned />} 
+          />
+          <Route 
+            path="inventory" 
+            element={
+              <InventoryProtectedRoute>
+                <Inventory />
+              </InventoryProtectedRoute>
+            } 
           />
           <Route 
             path="*" 

@@ -24,7 +24,6 @@ export const DeptAuthProvider = ({ children }) => {
       setToken(storedToken);
       setDeptAdmin(storedAdminData);
     }
-    
     setLoading(false);
   }, []);
 
@@ -58,4 +57,19 @@ export const DeptAuthProvider = ({ children }) => {
   );
 };
 
-export default DeptAuthContext; 
+export default DeptAuthContext;
+
+// Helper to extract admin ID from JWT token (no dependencies)
+export function getIdFromToken(token) {
+  if (!token) return null;
+  try {
+    const payload = token.split('.')[1];
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+    const decoded = JSON.parse(atob(padded));
+    // Adjust the property name below to match your token's structure!
+    return decoded._id || decoded.id || decoded.adminId;
+  } catch {
+    return null;
+  }
+} 

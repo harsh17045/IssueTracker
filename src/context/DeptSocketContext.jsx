@@ -67,7 +67,7 @@ export const DeptSocketProvider = ({ children }) => {
       console.log("[SOCKET] Received new-ticket event:", data);
       notificationSound.play();
       toast.info(
-        `New ticket: ${data.title} (Priority: ${data.priority})`,
+        `New ticket: ${data.title}`,
         {
           autoClose: 5000,
           position: "top-right",
@@ -76,7 +76,7 @@ export const DeptSocketProvider = ({ children }) => {
       addNotification({
         type: "new-ticket",
         title: "New Ticket Raised",
-        message: `New ticket: ${data.title} (Priority: ${data.priority})`,
+        message: `New ticket: ${data.title}`,
         ticketId: data.ticketId,
         priority: data.priority,
         from: data.from,

@@ -3,11 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, User, Calendar, Clock, Building2, Mail, Phone, MapPin, FileText, Download, Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { getDepartmentTickets, getDepartmentAttachment, updateTicketStatus } from '../../service/deptAuthService';
-import { useDeptAuth } from '../../context/DeptAuthContext';
+import { useDeptAuth, getIdFromToken } from '../../context/DeptAuthContext';
 
 const TicketDetail = () => {
   const { ticketId } = useParams();
-  const { deptAdmin } = useDeptAuth();
+  const { deptAdmin, token } = useDeptAuth();
+  const adminId = getIdFromToken(token);
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [attachmentUrl, setAttachmentUrl] = useState(null);
@@ -28,7 +29,8 @@ const TicketDetail = () => {
         
         if (result.success) {
           const foundTicket = result.tickets.find(t => t._id === ticketId);
-          
+          console.log(foundTicket)
+          console.log(deptAdmin)
           if (!foundTicket) {
             throw new Error('Ticket not found');
           }
@@ -554,30 +556,61 @@ const TicketDetail = () => {
             <div className="flex flex-col md:flex-row flex-wrap gap-4">
               {/* Status Update Form */}
               {ticket.status !== 'resolved' && ticket.status !== 'revoked' && (
-                <form onSubmit={handleStatusUpdate} className="flex items-center gap-2">
-                  <select
-                    value={newStatus}
-                    onChange={e => setNewStatus(e.target.value)}
-                    disabled={statusUpdating}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                  >
-                    <option value="">Select status</option>
-                    <option value="pending">Pending</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
-                  </select>
-                  <button
-                    type="submit"
-                    disabled={statusUpdating || !newStatus}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      statusUpdating || !newStatus
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-blue-500 text-white hover:bg-blue-600'
-                    }`}
-                  >
-                    {statusUpdating ? 'Updating...' : 'Update Status'}
-                  </button>
-                </form>
+                <>
+                  {/* Debug logs for assigned_to and adminId check */}
+                  {console.log('ticket.assigned_to:', ticket.assigned_to)}
+                  {console.log('adminId from token:', adminId)}
+                  {console.log('Assigned to comparison:', String(ticket.assigned_to) === String(adminId))}
+                  {/* Restrict status change for in_progress tickets to only if assigned_to matches adminId from token */}
+                  {ticket.status === 'in_progress' && adminId && (String(ticket.assigned_to) !== String(adminId)) ? (
+                    <div className="flex flex-col gap-2">
+                      <select
+                        disabled
+                        className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-400"
+                      >
+                        <option value="">Select status</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                      </select>
+                      <button
+                        type="button"
+                        disabled
+                        className="px-4 py-2 rounded-lg bg-gray-300 text-gray-500 cursor-not-allowed"
+                      >
+                        Update Status
+                      </button>
+                      <span className="text-sm text-red-500 mt-1">
+                        Only the assigned admin can change the status of this ticket while it is in progress.
+                      </span>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleStatusUpdate} className="flex items-center gap-2">
+                      <select
+                        value={newStatus}
+                        onChange={e => setNewStatus(e.target.value)}
+                        disabled={statusUpdating}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                      >
+                        <option value="">Select status</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                      </select>
+                      <button
+                        type="submit"
+                        disabled={statusUpdating || !newStatus}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          statusUpdating || !newStatus
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                        }`}
+                      >
+                        {statusUpdating ? 'Updating...' : 'Update Status'}
+                      </button>
+                    </form>
+                  )}
+                </>
               )}
               {/* Add Comment Form */}
               <form onSubmit={handleAddComment} className="flex items-center gap-2 w-full md:w-auto">

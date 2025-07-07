@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, Eye, Activity, CheckCircle2, XCircle, Ticket, User, Calendar, RefreshCw, HelpCircle, Clock, AlertCircle, MoreVertical } from 'lucide-react';
 import { getDepartmentTickets } from '../../service/deptAuthService';
-import { useDeptAuth } from '../../context/DeptAuthContext';
+import { getIdFromToken, useDeptAuth } from '../../context/DeptAuthContext';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
 const TicketAssigned = () => {
-  const { deptAdmin } = useDeptAuth();
+  const { token } = useDeptAuth();
+  const adminId = getIdFromToken(token);
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,8 +32,9 @@ const TicketAssigned = () => {
       setLoading(true);
       const result = await getDepartmentTickets();
       if (result.success) {
-        // Only in_progress tickets
-        const inProgressTickets = (result.tickets || []).filter(ticket => ticket.status === 'in_progress')
+        // Only in_progress tickets assigned to this admin
+        const inProgressTickets = (result.tickets || [])
+          .filter(ticket => ticket.status === 'in_progress' && String(ticket.assigned_to) === String(adminId))
           .map(ticket => ({
             ...ticket,
             priority: ticket.priority || 'medium',
@@ -44,45 +46,6 @@ const TicketAssigned = () => {
         setTickets(inProgressTickets);
       } else {
         toast.error(result.message || 'Failed to fetch tickets');
-        // Fallback to static data
-        setTickets([
-          {
-            _id: 1,
-            title: "Network connectivity issue in Building A",
-            description: "WiFi connection is very slow in Building A, affecting multiple departments and causing productivity issues",
-            status: "in_progress",
-            priority: "high",
-            createdAt: "2024-03-19T15:30:00Z",
-            raised_by: { name: "Jane Smith", email: "jane@example.com", avatar: "JS" }
-          },
-          {
-            _id: 2,
-            title: "Software installation request",
-            description: "Need Adobe Creative Suite installed on lab computers for graphic design course",
-            status: "in_progress",
-            priority: "medium",
-            createdAt: "2024-03-18T14:20:00Z",
-            raised_by: { name: "Mike Johnson", email: "mike@example.com", avatar: "MJ" }
-          },
-          {
-            _id: 3,
-            title: "Printer maintenance required",
-            description: "Color printer in Room 205 is producing faded prints and needs servicing",
-            status: "in_progress",
-            priority: "low",
-            createdAt: "2024-03-17T10:15:00Z",
-            raised_by: { name: "Sarah Wilson", email: "sarah@example.com", avatar: "SW" }
-          },
-          {
-            _id: 4,
-            title: "Database backup error",
-            description: "Automated backup failed last night, need immediate attention to prevent data loss",
-            status: "in_progress",
-            priority: "critical",
-            createdAt: "2024-03-16T09:45:00Z",
-            raised_by: { name: "Alex Chen", email: "alex@example.com", avatar: "AC" }
-          }
-        ]);
       }
     } catch (error) {
       console.error('Error fetching tickets:', error);
@@ -208,7 +171,7 @@ const TicketAssigned = () => {
                 Assigned Tickets
               </h1>
               <p className="text-lg text-gray-600">
-                {deptAdmin?.department} • <span className="font-semibold text-blue-600">{tickets.length}</span> active tickets
+                {tickets.length} active tickets
               </p>
             </div>
             

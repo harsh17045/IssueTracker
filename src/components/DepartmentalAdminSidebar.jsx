@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Bug, FileText, BarChart3, Settings, LogOut, ChevronDown, Shield, Building2, UserCheck } from 'lucide-react';
+import { Home, Users, Bug, FileText, BarChart3, Settings, LogOut, ChevronDown, Shield, Building2, UserCheck, Package } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useDeptAuth } from '../context/DeptAuthContext';
 import { toast } from 'react-toastify';
@@ -50,11 +50,26 @@ const DepartmentAdminSidebar = ({ isOpen, onClose }) => {
     }
   };
 
+  // Check if user has access to inventory based on department
+  const hasInventoryAccess = () => {
+    if (!deptAdmin?.department) return false;
+    
+    const departmentName = typeof deptAdmin.department === 'object' 
+      ? deptAdmin.department.name 
+      : deptAdmin.department;
+    
+    // Allow access for IT and Network Engineer departments
+    return departmentName.toLowerCase().includes('it') || 
+           departmentName.toLowerCase().includes('network engineer');
+  };
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dept/dashboard' },
     { id: 'tickets', label: 'Department Tickets', icon: Bug, path: '/dept/tickets' },
     { id: 'ticket-assigned', label: 'Ticket Assigned', icon: UserCheck, path: '/dept/ticket-assigned' },
     { id: 'reports', label: 'Reports', icon: FileText, path: '/dept/reports' },
+    // Conditionally show inventory based on department access
+    ...(hasInventoryAccess() ? [{ id: 'inventory', label: 'Inventory', icon: Package, path: '/dept/inventory' }] : []),
     {
       id: 'profile',
       label: (

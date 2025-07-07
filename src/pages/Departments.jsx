@@ -13,7 +13,8 @@ const Departments = () => {
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    description: ''
+    description: '',
+    canResolve: false
   });
 
   useEffect(() => {
@@ -72,7 +73,7 @@ const Departments = () => {
         toast.success('Department updated successfully');
       }
       setIsModalOpen(false);
-      setFormData({ name: '', description: '' });
+      setFormData({ name: '', description: '', canResolve: false });
       fetchDepartments();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Operation failed');
@@ -95,9 +96,13 @@ const Departments = () => {
     setModalMode(mode);
     setSelectedDepartment(dept);
     if (dept) {
-      setFormData({ name: dept.name, description: dept.description || '' });
+      setFormData({
+        name: dept.name,
+        description: dept.description || '',
+        canResolve: dept.canResolve || false
+      });
     } else {
-      setFormData({ name: '', description: '' });
+      setFormData({ name: '', description: '', canResolve: false });
     }
     setIsModalOpen(true);
   };
@@ -154,7 +159,10 @@ const Departments = () => {
                       <span className={theme.color}>Total Employees</span>
                       <span className="font-semibold">{dept.employeeCount || 0}</span>
                     </div>
-                    
+                    <div className="flex items-center justify-between text-sm">
+                      <span className={theme.color}>Can Resolve</span>
+                      <span className="font-semibold">{dept.canResolve ? 'Yes' : 'No'}</span>
+                    </div>
                     <button
                       onClick={() => handleViewEmployees(dept._id)}
                       className={`w-full bg-white bg-opacity-50 hover:bg-opacity-75 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${theme.color}`}
@@ -215,6 +223,18 @@ const Departments = () => {
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="canResolve"
+                      type="checkbox"
+                      checked={formData.canResolve}
+                      onChange={e => setFormData({ ...formData, canResolve: e.target.checked })}
+                      className="h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <label htmlFor="canResolve" className="text-sm font-medium text-gray-700">
+                      Can Resolve
+                    </label>
                   </div>
                   <div className="flex justify-end gap-2">
                     <button
