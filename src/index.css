@@ -25,3 +25,10 @@
 .-rotate-y-0 {
   animation: rotate-y-0 0.5s reverse forwards;
 }
+
+.blur-background {
+  filter: blur(6px);
+  transition: filter 0.2s;
+  pointer-events: none;
+  user-select: none;
+}

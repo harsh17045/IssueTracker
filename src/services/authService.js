@@ -339,23 +339,25 @@ export const getAllDepartments = async () => {
   }
 };
 
-export const revokeTicket = async (ticketId) => {
+export const revokeTicket = async (ticketId, commentText) => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
       throw new Error("No authentication token found");
     }
 
+    
     const response = await fetch(`${API_URL}/revoke-ticket/${ticketId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ status: 'revoked' }) // Explicitly set status to revoked
+      body: JSON.stringify({ commentText }),
     });
 
     const data = await response.json();
+
     if (!response.ok) {
       throw new Error(data.message || "Failed to revoke ticket");
     }
