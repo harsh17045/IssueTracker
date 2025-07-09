@@ -2,12 +2,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Users, Bug, FileText, BarChart3, Settings, LogOut, ChevronDown, Shield, Building2, UserCheck, Package } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useDeptAuth } from '../context/DeptAuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import { toast } from 'react-toastify';
 import LogoutModal from './LogoutModal';
 
 const DepartmentAdminSidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const { deptAdmin, logout } = useDeptAuth();
+  const { totalUnreadTickets, unreadTickets } = useNotifications();
   const [activeItem, setActiveItem] = useState('dashboard');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -63,10 +65,31 @@ const DepartmentAdminSidebar = ({ isOpen, onClose }) => {
            departmentName.toLowerCase().includes('network engineer');
   };
 
+  // Calculate assigned unread tickets for this admin
+  const assignedUnreadCount = unreadTickets && deptAdmin && deptAdmin._id
+    ? unreadTickets.filter(
+        t => t.assigned_to && (
+          (typeof t.assigned_to === 'object' ? t.assigned_to._id : t.assigned_to) === deptAdmin._id
+        )
+      ).length
+    : 0;
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dept/dashboard' },
-    { id: 'tickets', label: 'Department Tickets', icon: Bug, path: '/dept/tickets' },
-    { id: 'ticket-assigned', label: 'Ticket Assigned', icon: UserCheck, path: '/dept/ticket-assigned' },
+    { 
+      id: 'tickets', 
+      label: 'Department Tickets', 
+      icon: Bug, 
+      path: '/dept/tickets',
+      badge: totalUnreadTickets > 0 ? totalUnreadTickets : null
+    },
+    { 
+      id: 'ticket-assigned', 
+      label: 'Ticket Assigned', 
+      icon: UserCheck, 
+      path: '/dept/ticket-assigned',
+      badge: assignedUnreadCount > 0 ? assignedUnreadCount : null
+    },
     { id: 'reports', label: 'Reports', icon: FileText, path: '/dept/reports' },
     // Conditionally show inventory based on department access
     ...(hasInventoryAccess() ? [{ id: 'inventory', label: 'Inventory', icon: Package, path: '/dept/inventory' }] : []),
@@ -166,12 +189,19 @@ const DepartmentAdminSidebar = ({ isOpen, onClose }) => {
                   key={item.id}
                   to={item.path}
                   onClick={() => setActiveItem(item.id)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-colors ${
                     isActive ? 'bg-gray-200 text-gray-800' : 'text-gray-600 hover:bg-gray-200'
                   }`}
                 >
-                  <Icon size={20} className="text-gray-500" />
-                  <span className="font-medium">{item.label}</span>
+                  <div className="flex items-center space-x-3">
+                    <Icon size={20} className="text-gray-500" />
+                    <span className="font-medium">{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <div className="flex items-center justify-center w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </div>
+                  )}
                 </Link>
               );
             })}

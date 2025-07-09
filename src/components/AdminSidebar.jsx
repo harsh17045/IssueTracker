@@ -57,18 +57,8 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     { id: 'departments', label: 'Departments', icon: FileText, path: '/admin/departments' },
     { id: 'buildings', label: 'Buildings', icon: Building2, path: '/admin/buildings' },
     { id: 'dept-admins', label: 'Departmental Admins', icon: UserCog, path: '/admin/departmental-admins' },
-    { id: 'inventory', label: 'Inventory', icon: Package, path: '/admin/inventory' },
     { id: 'reports', label: 'Reports', icon: BarChart3, path: '/admin/reports' },
-    {
-      id: 'profile',
-      label: (
-        <div className="flex flex-col">
-          <span>{admin?.name || 'Admin Profile'}</span>
-          <span className="text-sm text-gray-500">{admin?.role || 'Administrator'}</span>
-        </div>
-      ),
-      icon: Shield,
-    },
+    { id: 'component-sets', label: 'Component Sets', icon: Package, path: '/admin/component-sets' },
   ];
 
   return (

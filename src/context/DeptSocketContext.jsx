@@ -9,7 +9,7 @@ const DeptSocketContext = createContext();
 
 export const DeptSocketProvider = ({ children }) => {
   const { deptAdmin } = useDeptAuth();
-  const { addNotification } = useNotifications();
+  const { addNotification, refreshUnreadTickets } = useNotifications();
   const socketRef = useRef(null);
 
   useEffect(() => {
@@ -28,7 +28,6 @@ export const DeptSocketProvider = ({ children }) => {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log("Socket connected successfully:", socket.id);
       // Join rooms logic (same as in DepartmentDashboard)
       const roomsToJoin = [];
       if (typeof deptAdmin.department === "object" && deptAdmin.department._id) {
@@ -39,7 +38,6 @@ export const DeptSocketProvider = ({ children }) => {
         roomsToJoin.push(`department-${departmentName.toLowerCase()}`);
       }
       // Debug log for locations
-      console.log("deptAdmin.locations:", deptAdmin.locations);
       if (deptAdmin.isNetworkEngineer && deptAdmin.locations?.length > 0) {
         deptAdmin.locations.forEach((location) => {
           const buildingId = typeof location.building === "object" ? location.building._id : location.building;
@@ -48,7 +46,6 @@ export const DeptSocketProvider = ({ children }) => {
           }
         });
       }
-      console.log("Joining rooms:", roomsToJoin);
       roomsToJoin.forEach((room) => {
         socket.emit("join-room", room);
       });
@@ -82,6 +79,8 @@ export const DeptSocketProvider = ({ children }) => {
         from: data.from,
         raisedAt: data.raisedAt,
       });
+      // Refresh unread tickets count
+      refreshUnreadTickets();
     });
     socket.on("new-comment", (data) => {
       console.log("[SOCKET] Received new-comment event:", data);
@@ -101,6 +100,8 @@ export const DeptSocketProvider = ({ children }) => {
         message: `New comment from ${data.employeeName || "Employee"} on: ${data.title}`,
         ticketId: data.ticketId,
       });
+      // Refresh unread tickets count
+      refreshUnreadTickets();
     });
 
     // Handle ticket revoked event
@@ -120,6 +121,8 @@ export const DeptSocketProvider = ({ children }) => {
         message: data.message || `Ticket titled "${data.title}" has been revoked by the employee.`,
         ticketId: data.ticketId,
       });
+      // Refresh unread tickets count
+      refreshUnreadTickets();
     });
 
     // Handle status update event

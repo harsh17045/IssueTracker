@@ -1,12 +1,107 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Eye, Activity, CheckCircle2, XCircle, Ticket, User, Calendar, RefreshCw, HelpCircle, Clock, AlertCircle, MoreVertical } from 'lucide-react';
-import { getDepartmentTickets } from '../../service/deptAuthService';
+import { getDepartmentTickets, markTicketAsViewed } from '../../service/deptAuthService';
 import { getIdFromToken, useDeptAuth } from '../../context/DeptAuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
+// Shared utility functions
+
+
+// Move TicketCard component outside to prevent re-creation on every render
+const TicketCard = ({ ticket, onViewTicket, unreadTickets }) => {
+
+  const getTimeAgo = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays}d ago`;
+  };
+
+  // Check if a ticket has unread updates
+  const hasUnreadUpdates = (ticketId) => {
+    return unreadTickets.some(ticket => ticket.ticketId === ticketId);
+  };
+
+  // Get unread count for a specific ticket
+  const getUnreadCount = (ticketId) => {
+    const unreadTicket = unreadTickets.find(ticket => ticket.ticketId === ticketId);
+    return unreadTicket ? unreadTicket.unreadCount : 0;
+  };
+
+  const isUnread = hasUnreadUpdates(ticket._id);
+  const unreadCount = getUnreadCount(ticket._id);
+  
+  return (
+    <div className={`group bg-white rounded-2xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer overflow-hidden ${
+      isUnread ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+    }`}>
+      {/* Priority indicator bar */}
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                {ticket.title}
+              </h3>
+              {isUnread && (
+                <div className="flex items-center justify-center w-3 h-3 bg-red-500 rounded-full flex-shrink-0">
+                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+              {ticket.description}
+            </p>
+            {isUnread && (
+              <p className="text-xs text-red-600 font-medium mt-2">
+                {unreadCount} new update{unreadCount > 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+          <button className="ml-2 p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all">
+            <MoreVertical size={16} className="text-gray-400" />
+          </button>
+        </div>
+        <div className="flex items-center gap-3 mb-4">
+          
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+            <Activity size={12} />
+            In Progress
+          </span>
+        </div>
+        {/* User info */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">{ticket.raised_by?.name}</p>
+              <p className="text-xs text-gray-500">{ticket.raised_by?.email}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+              <Clock size={12} />
+              {getTimeAgo(ticket.createdAt)}
+            </div>
+            <button className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors font-medium" onClick={() => onViewTicket(ticket._id)}>
+              <Eye size={14} />
+              View
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TicketAssigned = () => {
   const { token } = useDeptAuth();
+  const { unreadTickets, refreshUnreadTickets, removeTicketFromUnread } = useNotifications();
   const adminId = getIdFromToken(token);
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
@@ -22,12 +117,7 @@ const TicketAssigned = () => {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
-  useEffect(() => {
-    fetchTickets();
-    // eslint-disable-next-line
-  }, []);
-
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     try {
       setLoading(true);
       const result = await getDepartmentTickets();
@@ -37,7 +127,6 @@ const TicketAssigned = () => {
           .filter(ticket => ticket.status === 'in_progress' && String(ticket.assigned_to) === String(adminId))
           .map(ticket => ({
             ...ticket,
-            priority: ticket.priority || 'medium',
             raised_by: {
               ...ticket.raised_by,
               avatar: ticket.raised_by?.avatar || getInitials(ticket.raised_by?.name)
@@ -53,32 +142,27 @@ const TicketAssigned = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [adminId]);
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'critical':
-        return { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' };
-      case 'high':
-        return { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500' };
-      case 'medium':
-        return { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-200', dot: 'bg-yellow-500' };
-      case 'low':
-        return { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200', dot: 'bg-green-500' };
-      default:
-        return { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200', dot: 'bg-gray-500' };
+  useEffect(() => {
+    if (adminId) {
+      fetchTickets();
     }
-  };
+  }, [fetchTickets]);
 
-  const getTimeAgo = (dateString) => {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}d ago`;
-  };
+  // Refresh data when user returns to the page (e.g., after viewing a ticket)
+  useEffect(() => {
+    const handleFocus = () => {
+      // Refresh unread tickets when user returns to the page
+      refreshUnreadTickets();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refreshUnreadTickets]);
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = 
@@ -87,72 +171,23 @@ const TicketAssigned = () => {
     return matchesSearch;
   });
 
-  const handleRefresh = () => {
-    fetchTickets();
+  const handleRefresh = async () => {
+    await fetchTickets();
+    await refreshUnreadTickets();
+    toast.success('Tickets refreshed successfully');
   };
 
-  const handleViewTicket = (ticketId) => {
-    navigate(`/dept/tickets/${ticketId}`);
-  };
-
-  const TicketCard = ({ ticket }) => {
-    const priorityColors = getPriorityColor(ticket.priority);
-    return (
-      <div className="group bg-white rounded-2xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer overflow-hidden">
-        {/* Priority indicator bar */}
-        <div className={`h-1 ${priorityColors.dot}`}></div>
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
-                {ticket.title}
-              </h3>
-              <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                {ticket.description}
-              </p>
-            </div>
-            <button className="ml-2 p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all">
-              <MoreVertical size={16} className="text-gray-400" />
-            </button>
-          </div>
-          {/* Priority and Status */}
-          <div className="flex items-center gap-3 mb-4">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${priorityColors.bg} ${priorityColors.text} ${priorityColors.border}`}>
-              <div className={`w-2 h-2 rounded-full ${priorityColors.dot}`}></div>
-              {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
-              <Activity size={12} />
-              In Progress
-            </span>
-          </div>
-          {/* User info */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                {ticket.raised_by?.avatar}
-              </div> */}
-              <div>
-                <p className="text-sm font-medium text-gray-900">{ticket.raised_by?.name}</p>
-                <p className="text-xs text-gray-500">{ticket.raised_by?.email}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                <Clock size={12} />
-                {getTimeAgo(ticket.createdAt)}
-              </div>
-              <button className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors font-medium" onClick={() => handleViewTicket(ticket._id)}>
-                <Eye size={14} />
-                View
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const handleViewTicket = useCallback(async (ticketId) => {
+    try {
+      await markTicketAsViewed(ticketId);
+      removeTicketFromUnread(ticketId); // Optimistically update UI
+      await refreshUnreadTickets();
+      navigate(`/dept/tickets/${ticketId}`);
+    } catch (error) {
+      console.error('Error marking ticket as viewed:', error);
+      navigate(`/dept/tickets/${ticketId}`);
+    }
+  }, [navigate, refreshUnreadTickets, removeTicketFromUnread]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -243,7 +278,7 @@ const TicketAssigned = () => {
         ) : viewMode === 'cards' ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredTickets.map((ticket) => (
-              <TicketCard key={ticket._id} ticket={ticket} />
+              <TicketCard key={ticket._id} ticket={ticket} onViewTicket={handleViewTicket} unreadTickets={unreadTickets} />
             ))}
           </div>
         ) : (
@@ -254,7 +289,6 @@ const TicketAssigned = () => {
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Title</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Description</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Raised By</th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Priority</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Status</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Created</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase border-b border-gray-100">Actions</th>
@@ -262,23 +296,28 @@ const TicketAssigned = () => {
               </thead>
               <tbody>
                 {filteredTickets.map((ticket, idx) => {
-                  const priorityColors = getPriorityColor(ticket.priority);
+                  const isUnread = unreadTickets.some(t => t.ticketId === ticket._id);
                   return (
                     <tr
                       key={ticket._id}
-                      className={`transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 border-b border-gray-100`}
+                      className={`transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 border-b border-gray-100 ${
+                        isUnread ? 'bg-blue-50' : ''
+                      }`}
                     >
-                      <td className="px-6 py-4 font-semibold text-gray-900 max-w-xs truncate">{ticket.title}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-900 max-w-xs truncate">
+                        <div className="flex items-center gap-2">
+                          {ticket.title}
+                          {isUnread && (
+                            <div className="flex items-center justify-center w-2 h-2 bg-red-500 rounded-full flex-shrink-0">
+                              <div className="w-1 h-1 bg-white rounded-full"></div>
+                            </div>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 text-gray-500 max-w-xs truncate">{ticket.description}</td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900 font-medium">{ticket.raised_by?.name || 'N/A'}</div>
                         <div className="text-xs text-gray-400">{ticket.raised_by?.email || ''}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${priorityColors.bg} ${priorityColors.text} ${priorityColors.border}`}> 
-                          <div className={`w-2 h-2 rounded-full ${priorityColors.dot}`}></div>
-                          {ticket.priority?.charAt(0).toUpperCase() + ticket.priority?.slice(1)}
-                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">

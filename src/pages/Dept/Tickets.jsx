@@ -3,11 +3,13 @@ import { Search, Filter, Eye, Clock, CheckCircle2, XCircle, Activity, Ticket } f
 import { useNavigate } from 'react-router-dom';
 import { getDepartmentTickets } from '../../service/deptAuthService';
 import { useDeptAuth } from '../../context/DeptAuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { toast } from 'react-toastify';
 
 const DepartmentTickets = () => {
   const navigate = useNavigate();
   const { deptAdmin } = useDeptAuth();
+  const { unreadTickets, refreshUnreadTickets } = useNotifications();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,6 +74,17 @@ const DepartmentTickets = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Check if a ticket has unread updates
+  const hasUnreadUpdates = (ticketId) => {
+    return unreadTickets.some(ticket => ticket.ticketId === ticketId);
+  };
+
+  // Get unread count for a specific ticket
+  const getUnreadCount = (ticketId) => {
+    const unreadTicket = unreadTickets.find(ticket => ticket.ticketId === ticketId);
+    return unreadTicket ? unreadTicket.unreadCount : 0;
   };
 
   const getStatusColor = (status) => {
@@ -148,8 +161,9 @@ const DepartmentTickets = () => {
     setSortField(field);
   };
 
-  const handleRefresh = () => {
-    fetchTickets();
+  const handleRefresh = async () => {
+    await fetchTickets();
+    await refreshUnreadTickets();
     toast.success('Tickets refreshed successfully');
   };
 
@@ -163,12 +177,14 @@ const DepartmentTickets = () => {
             {deptAdmin?.department || 'Department'} - Manage and track all tickets
           </p>
         </div>
-        <button
-          onClick={handleRefresh}
-          className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-        >
-          Refresh
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -328,15 +344,30 @@ const DepartmentTickets = () => {
               ) : (
                 currentTickets.map((ticket) => {
                   const statusColors = getStatusColor(ticket.status);
+                  const isUnread = hasUnreadUpdates(ticket._id);
+                  const unreadCount = getUnreadCount(ticket._id);
+                  
                   return (
                     <tr 
                       key={ticket._id} 
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${isUnread ? 'bg-blue-50' : ''}`}
                       onClick={() => handleTicketClick(ticket._id)}
                     >
                       <td className="px-6 py-4">
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900">{ticket.title}</h3>
+                        <div className="flex items-center gap-3">
+                          {isUnread && (
+                            <div className="flex items-center justify-center w-3 h-3 bg-red-500 rounded-full flex-shrink-0">
+                              <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="text-sm font-semibold text-gray-900">{ticket.title}</h3>
+                            {isUnread && (
+                              <p className="text-xs text-red-600 font-medium mt-1">
+                                {unreadCount} new update{unreadCount > 1 ? 's' : ''}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">

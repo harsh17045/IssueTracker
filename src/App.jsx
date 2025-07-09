@@ -10,7 +10,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Employee from './pages/Employee';
 import EmployeeDetail from './pages/EmployeeDetail';
-import Tickets from './pages/Tickets.jsx'; 
+import Tickets from './pages/Tickets.jsx';
 import Departments from './pages/Departments';
 import Building from './pages/Buildings';
 import Reports from './pages/Reports';
@@ -26,6 +26,8 @@ import DepartmentLayout from './layout/DepartmentLayout';
 import { DeptSocketProvider } from './context/DeptSocketContext';
 import Inventory from './pages/Dept/Inventory';
 import InventoryProtectedRoute from './components/InventoryProtectedRoute';
+import InventoryDetail from './pages/Dept/InventoryDetail';
+import ComponentSets from './pages/ComponentSets';
 
 // Admin Routes Component
 const AdminRoutes = () => {
@@ -45,6 +47,8 @@ const AdminRoutes = () => {
             <Route path="/departmental-admins" element={<DepartmentalAdmins />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/tickets/:ticketId" element={<TicketDetail />} />
+            <Route path="/admin/inventory/:id" element={<InventoryDetail />} />
+            <Route path="/component-sets" element={<ComponentSets />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>
         </main>
@@ -82,7 +86,7 @@ const App = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Navigate to="/admin-login" replace />} />
-        
+
         {/* Auth Routes */}
         <Route path="/*" element={<AuthRoutes />} />
 
@@ -113,46 +117,50 @@ const App = () => {
             </DeptAuthProvider>
           }
         >
-          <Route 
-            path="dashboard" 
+          <Route
+            path="dashboard"
             element={
               <div>
                 <DeptDashboard />
               </div>
-            } 
+            }
           />
-          <Route 
-            path="tickets" 
-            element={<DepartmentTickets />} 
+          <Route
+            path="tickets"
+            element={<DepartmentTickets />}
           />
-          <Route 
-            path="tickets/:ticketId" 
-            element={<DepartmentTicketDetail />} 
+          <Route
+            path="tickets/:ticketId"
+            element={<DepartmentTicketDetail />}
           />
-          <Route 
-            path="reports" 
-            element={<DeptReports />} 
+          <Route
+            path="reports"
+            element={<DeptReports />}
           />
-          <Route 
-            path="ticket-assigned" 
-            element={<TicketAssigned />} 
+          <Route
+            path="ticket-assigned"
+            element={<TicketAssigned />}
           />
-          <Route 
-            path="inventory" 
+          <Route
+            path="inventory"
             element={
               <InventoryProtectedRoute>
                 <Inventory />
               </InventoryProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="*" 
+          <Route
+            path="inventory/:id"
+            element={<InventoryDetail />}
+          />
+          <Route
+            path="*"
             element={
               <div>
                 <p>Fallback route matched</p>
                 <Navigate to="/dept/dashboard" replace />
               </div>
-            } 
+            }
           />
         </Route>
 

@@ -86,7 +86,6 @@ export default function DepartmentDashboard() {
         const result = await getLoggedInDepartmentalAdmin()
         if (result.success && result.data) {
           const adminData = result.data.admin || result.data
-          console.log("Fetched full admin data:", adminData)
           setDeptAdmin(adminData)
         }
       } catch (error) {

@@ -544,3 +544,53 @@ export const updateNetworkEngineerLocations = async (adminId, locations) => {
     throw error;
   }
 };
+
+// Component Set Management
+export const getComponentSets = async () => {
+  try {
+    const response = await makeAuthorizedRequest('/get-componentset');
+    console.log(response)
+    return response.sets;
+  } catch (error) {
+    console.error('Error fetching component sets:', error);
+    throw error;
+  }
+};
+
+export const addComponentSet = async (setData) => {
+  try {
+    const response = await makeAuthorizedRequest('/add-componentset', {
+      method: 'POST',
+      body: JSON.stringify(setData)
+    });
+    return response;
+  } catch (error) {
+    console.error('Error adding component set:', error);
+    throw error;
+  }
+};
+
+export const deleteComponentSet = async (setId) => {
+  try {
+    const response = await makeAuthorizedRequest(`/delete-componentset/${setId}`, {
+      method: 'DELETE'
+    });
+    return response;
+  } catch (error) {
+    console.error('Error deleting component set:', error);
+    throw error;
+  }
+};
+
+export const editComponentSet = async (setId, setData) => {
+  try {
+    const response = await makeAuthorizedRequest(`/edit-componentset/${setId}`, {
+      method: 'PUT',
+      body: JSON.stringify(setData)
+    });
+    return response;
+  } catch (error) {
+    console.error('Error editing component set:', error);
+    throw error;
+  }
+};

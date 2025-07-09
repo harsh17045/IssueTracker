@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, User, Calendar, Clock, Building2, Mail, Phone, MapPin, FileText, Download, Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { getDepartmentTickets, getDepartmentAttachment, updateTicketStatus } from '../../service/deptAuthService';
+import { getDepartmentTickets, getDepartmentAttachment, updateTicketStatus, markTicketAsViewed } from '../../service/deptAuthService';
 import { useDeptAuth, getIdFromToken } from '../../context/DeptAuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 const TicketDetail = () => {
   const { ticketId } = useParams();
-  const { deptAdmin, token } = useDeptAuth();
+  const { token } = useDeptAuth();
+  const { refreshUnreadTickets } = useNotifications();
   const adminId = getIdFromToken(token);
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,45 +31,33 @@ const TicketDetail = () => {
         
         if (result.success) {
           const foundTicket = result.tickets.find(t => t._id === ticketId);
-          console.log(foundTicket)
-          console.log(deptAdmin)
           if (!foundTicket) {
-            throw new Error('Ticket not found');
+            toast.error('Ticket not found');
+            return;
           }
           
           setTicket(foundTicket);
+          
+          // Mark ticket as viewed
+          await markTicketAsViewed(ticketId);
+          
+          // Refresh unread tickets count
+          await refreshUnreadTickets();
         } else {
-          throw new Error(result.message || 'Failed to fetch tickets');
+          toast.error(result.message || 'Failed to fetch ticket details');
         }
       } catch (error) {
-        console.error('Error fetching ticket details:', error);
+        console.error('Error loading ticket details:', error);
         toast.error('Failed to load ticket details');
-        // Fallback to static data for demo
-        setTicket({
-          _id: ticketId,
-          title: "Printer not working in Lab 101",
-          description: "The printer in Lab 101 is showing error messages and not printing. The error code displayed is E-04. This is affecting students who need to print their assignments.",
-          status: "pending",
-          createdAt: "2024-03-20T10:00:00Z",
-          raised_by: {
-            name: "John Doe",
-            email: "john.doe@example.com",
-            phone: "+1 234 567 8900",
-            department: "Computer Science"
-          },
-          from_department: "Computer Science",
-          to_department: {
-            name: deptAdmin?.department || "IT Department"
-          },
-          attachment: "printer-error-screenshot.png"
-        });
       } finally {
         setLoading(false);
       }
     };
-
-    fetchTicketDetails();
-  }, [ticketId, deptAdmin]);
+    
+    if (ticketId) {
+      fetchTicketDetails();
+    }
+  }, [ticketId]); // Removed refreshUnreadTickets from dependencies to prevent infinite loop
 
   // Clean up attachment URL on unmount
   useEffect(() => {
@@ -75,8 +65,11 @@ const TicketDetail = () => {
       if (attachmentUrl) {
         window.URL.revokeObjectURL(attachmentUrl);
       }
+      if (previewedCommentUrl) {
+        window.URL.revokeObjectURL(previewedCommentUrl);
+      }
     };
-  }, [attachmentUrl]);
+  }, [attachmentUrl, previewedCommentUrl]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -557,10 +550,6 @@ const TicketDetail = () => {
               {/* Status Update Form */}
               {ticket.status !== 'resolved' && ticket.status !== 'revoked' && (
                 <>
-                  {/* Debug logs for assigned_to and adminId check */}
-                  {console.log('ticket.assigned_to:', ticket.assigned_to)}
-                  {console.log('adminId from token:', adminId)}
-                  {console.log('Assigned to comparison:', String(ticket.assigned_to) === String(adminId))}
                   {/* Restrict status change for in_progress tickets to only if assigned_to matches adminId from token */}
                   {ticket.status === 'in_progress' && adminId && (String(ticket.assigned_to) !== String(adminId)) ? (
                     <div className="flex flex-col gap-2">
