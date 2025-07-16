@@ -294,12 +294,12 @@ const TicketDetail = () => {
                       className="w-full text-2xl font-bold text-gray-900 bg-transparent border-b-2 border-purple-300 focus:border-purple-500 focus:outline-none"
                       placeholder="Enter ticket title"
                     />
-                    <p className="text-gray-600">Ticket ID: {ticket._id}</p>
+                    <p className="text-gray-600">Ticket ID: {ticket.ticket_id}</p>
                   </div>
                 ) : (
                   <>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">{ticket.title}</h1>
-                    <p className="text-gray-600">Ticket ID: {ticket._id}</p>
+                    <p className="text-gray-600">Ticket ID: {ticket.ticket_id}</p>
                   </>
                 )}
               </div>
