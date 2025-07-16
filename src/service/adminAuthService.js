@@ -594,3 +594,23 @@ export const editComponentSet = async (setId, setData) => {
     throw error;
   }
 };
+
+export const getActionLogs = async (filters = {}) => {
+  let url = `${API_URL}/logs`;
+  const params = new URLSearchParams();
+  if (filters.action) params.append('action', filters.action);
+  if (filters.performedBy) params.append('performedBy', filters.performedBy);
+  if (filters.from) params.append('from', filters.from);
+  if (filters.to) params.append('to', filters.to);
+  if ([...params].length > 0) url += `?${params.toString()}`;
+  const response = await fetch(url, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${getAdminToken && getAdminToken()}`,
+    },
+  });
+  const data = await response.json();
+  if (data.success) return data.logs;
+  return [];
+};

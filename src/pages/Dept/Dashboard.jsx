@@ -384,6 +384,7 @@ export default function DepartmentDashboard() {
             <thead>
               <tr className="border-b border-gray-200">
                 <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Title</th>
+                <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Ticket ID</th>
                 <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Status</th>
                 <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Created At</th>
                 <th className="text-left py-4 px-4 text-sm font-semibold text-gray-600">Raised By</th>
@@ -403,6 +404,7 @@ export default function DepartmentDashboard() {
                     }}
                   >
                     <td className="py-4 px-4 text-sm text-gray-900 font-medium">{ticket.title}</td>
+                    <td className="py-4 px-4 text-sm text-gray-500">{ticket.ticket_id}</td>
                     <td className="py-4 px-4">
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
@@ -428,7 +430,7 @@ export default function DepartmentDashboard() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" className="py-12 text-center text-gray-500">
+                  <td colSpan="5" className="py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center">
                       <Ticket className="text-gray-300 mb-2" size={48} />
                       <p className="text-lg font-medium">No tickets found</p>

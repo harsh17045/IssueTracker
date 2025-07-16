@@ -28,7 +28,7 @@ const TicketDetail = () => {
       try {
         setLoading(true);
         const result = await getDepartmentTickets();
-        
+        console.log(result)
         if (result.success) {
           const foundTicket = result.tickets.find(t => t._id === ticketId);
           if (!foundTicket) {
@@ -286,7 +286,7 @@ const TicketDetail = () => {
             <div className="flex justify-between items-start mb-6">
               <div className="flex-1">
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">{ticket.title}</h1>
-                <p className="text-gray-600">Ticket ID: {ticket._id}</p>
+                <p className="text-gray-600">Ticket ID: {ticket.ticket_id}</p>
               </div>
               <div className="flex items-center gap-3">
                 <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(ticket.status).bg} ${getStatusColor(ticket.status).text} ${getStatusColor(ticket.status).border}`}>

@@ -59,29 +59,30 @@ const AdminSidebar = ({ isOpen, onClose }) => {
     { id: 'dept-admins', label: 'Departmental Admins', icon: UserCog, path: '/admin/departmental-admins' },
     { id: 'reports', label: 'Reports', icon: BarChart3, path: '/admin/reports' },
     { id: 'component-sets', label: 'Component Sets', icon: Package, path: '/admin/component-sets' },
+    { id: 'logs', label: 'Action Logs', icon: FileText, path: '/admin/logs' },
   ];
 
   return (
     <>
       {isOpen && <div className="fixed inset-0 bg-black bg-opacity-30 z-40 lg:hidden" onClick={onClose} />}
       <div
-        className={`fixed left-0 top-0 h-full w-64 bg-white shadow-md transform transition-transform duration-300 z-50 flex flex-col ${
+        className={`fixed left-0 top-0 h-full w-64 bg-white shadow-md transform transition-transform duration-300 z-50 flex flex-col justify-between ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 lg:static lg:z-auto border-r border-gray-300`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-300">
+        <div className="flex items-center justify-between p-5 border-b border-gray-300">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-cyan-300 to-purple-400 rounded-lg flex items-center justify-center">
+            <div className="w-9 h-9 bg-gradient-to-r from-cyan-300 to-purple-400 rounded-lg flex items-center justify-center">
               <Bug size={20} className="text-black"/>
             </div>
-            <span className="text-xl font-bold text-gray-800">Issue Tracker Admin</span>
+            <span className="text-lg font-bold text-gray-800">Issue Tracker Admin</span>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6">
-          <div className="space-y-1">
+        <nav className="flex-1 px-4 py-5 overflow-y-auto min-h-0">
+          <div className="space-y-1.5">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeItem === item.id;
@@ -139,7 +140,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
                   onClick={() => setActiveItem(item.id)}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
                     isActive ? 'bg-gray-200 text-gray-800' : 'text-gray-600 hover:bg-gray-200'
-                  }`}
+                  } text-base`}
                 >
                   <Icon size={20} className="text-gray-500" />
                   <span className="font-medium">{item.label}</span>
@@ -150,10 +151,10 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         </nav>
 
         {/* Logout Button */}
-        <div className="p-4 border-t border-gray-300 mt-auto">
+        <div className="p-5 border-t border-gray-300">
           <button
             onClick={() => setShowLogoutModal(true)}
-            className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-base"
           >
             <LogOut size={20} className="text-red-500" />
             <span className="font-medium">Logout</span>

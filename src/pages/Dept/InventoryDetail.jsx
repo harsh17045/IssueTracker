@@ -21,7 +21,6 @@ const InventoryDetail = () => {
   const [componentTypes, setComponentTypes] = useState([]);
   const [componentSets, setComponentSets] = useState([]);
   const [networkLocations, setNetworkLocations] = useState([]);
-  const [expandedComponent, setExpandedComponent] = useState(null);
 
   useEffect(() => {
     const fetchSystem = async () => {
@@ -207,6 +206,9 @@ const InventoryDetail = () => {
           <div><span className="font-semibold">Name:</span> {system.systemName}</div>
           <div><span className="font-semibold">Tag:</span> {system.tag}</div>
           <div><span className="font-semibold">Type:</span> {system.systemType}</div>
+          <div><span className="font-semibold">Model No.:</span> {system.modelNo}</div>
+          <div><span className="font-semibold">Manufacturer:</span> {system.manufacturer || '-'}</div>
+          <div><span className="font-semibold">Designation:</span> {system.designation}</div>
           <div><span className="font-semibold">Building:</span> {system.buildingName || system.building?.name || ''}</div>
           <div><span className="font-semibold">Floor:</span> {system.floor}</div>
           <div><span className="font-semibold">Lab:</span> {system.labNumber}</div>
@@ -222,22 +224,15 @@ const InventoryDetail = () => {
               <span className="font-semibold">Components:</span>
               <ul className="list-disc ml-6">
                 {system.components.map((comp, idx) => (
-                  <React.Fragment key={idx}>
-                    <li
-                      className="cursor-pointer hover:underline text-indigo-700"
-                      onClick={() => setExpandedComponent(expandedComponent === idx ? null : idx)}
-                    >
-                      {comp.componentType} ({comp.tag}) {expandedComponent === idx ? '▲' : '▼'}
-                    </li>
-                    {expandedComponent === idx && (
-                      <div className="ml-6 mt-2 mb-4 p-4 bg-indigo-50 border-l-4 border-indigo-200 rounded-xl text-sm text-gray-700">
-                        {comp.modelNumber && <div><b>Model:</b> {comp.modelNumber}</div>}
-                        {comp.manufacturer && <div><b>Manufacturer:</b> {comp.manufacturer}</div>}
-                        {comp.remark && <div><b>Remark:</b> {comp.remark}</div>}
-                        {/* Add more fields as needed */}
-                      </div>
-                    )}
-                  </React.Fragment>
+                  <li key={idx} className="text-indigo-700">
+                    {comp.componentType} ({comp.tag})
+                    <div className="ml-6 mt-2 mb-4 p-4 bg-indigo-50 border-l-4 border-indigo-200 rounded-xl text-sm text-gray-700">
+                      {comp.modelNumber && <div><b>Model:</b> {comp.modelNumber}</div>}
+                      {comp.manufacturer && <div><b>Manufacturer:</b> {comp.manufacturer}</div>}
+                      {comp.remark && <div><b>Remark:</b> {comp.remark}</div>}
+                      {/* Add more fields as needed */}
+                    </div>
+                  </li>
                 ))}
               </ul>
             </div>

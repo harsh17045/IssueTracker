@@ -9,7 +9,6 @@ const InventorySystemForm = ({
   initialData = {},
   onSubmit,
   onCancel,
-  systemTypes = [],
   componentTypes = [],
   componentSets = [],
   mode = 'add',
@@ -39,9 +38,11 @@ const InventorySystemForm = ({
     }
     setForm({
       ...initialData,
+      manufacturer: initialData.manufacturer || '',
       building: buildingId,
       floor: initialData.floor ? String(initialData.floor) : '',
       labNumber: initialData.labNumber ? String(initialData.labNumber) : '',
+      designation: initialData.designation || initialData.designations || '',
     });
     setOwnerEmailInput(initialData.owner?.email || initialData.ownerName || '');
   }, [initialData, buildings]);
@@ -214,7 +215,9 @@ const InventorySystemForm = ({
   };
 
   const removeComponent = (index) => {
-    setForm(prev => ({ ...prev, components: prev.components.filter((_, i) => i !== index) }));
+    if (window.confirm('Are you sure you want to delete this component?')) {
+      setForm(prev => ({ ...prev, components: prev.components.filter((_, i) => i !== index) }));
+    }
   };
 
   const isCustomComponentType = (componentType) => {
@@ -241,8 +244,8 @@ const InventorySystemForm = ({
           <label className="block text-sm font-semibold mb-1">System Type</label>
           <select className="w-full px-4 py-2 border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-transparent" value={form.systemType || ''} onChange={e => handleChange('systemType', e.target.value)}>
             <option value="">Select System Type</option>
-            {systemTypes.map((type) => (
-              <option key={type} value={type}>{type}</option>
+            {componentSets.map(set => (
+              <option key={set.name} value={set.name}>{set.name}</option>
             ))}
           </select>
         </div>
@@ -251,8 +254,18 @@ const InventorySystemForm = ({
           <input type="text" className="w-full px-4 py-2 border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-transparent" value={form.modelNo || ''} onChange={e => handleChange('modelNo', e.target.value)} placeholder="e.g., HP-1234" />
         </div>
         <div>
-          <label className="block text-sm font-semibold mb-1">Designations</label>
-          <input type="text" className="w-full px-4 py-2 border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-transparent" value={form.designations || ''} onChange={e => handleChange('designations', e.target.value)} placeholder="e.g., Lab Incharge, Student" />
+          <label className="block text-sm font-semibold mb-1">Manufacturer</label>
+          <input
+            type="text"
+            value={form.manufacturer || ''}
+            onChange={e => handleChange('manufacturer', e.target.value)}
+            placeholder="e.g., HP, Dell, Lenovo"
+            className="w-full px-4 py-2 border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1">Designation</label>
+          <input type="text" className="w-full px-4 py-2 border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:border-transparent" value={form.designation || ''} onChange={e => handleChange('designation', e.target.value)} placeholder="e.g., Lab Incharge, Student" />
         </div>
         <div>
           <label className="block text-sm font-semibold mb-1">Building *</label>
@@ -288,8 +301,8 @@ const InventorySystemForm = ({
           </select>
         </div>
         <div>
-          <label className="block text-sm font-semibold mb-1">Owner Email</label>
-          <input type="email" className="w-full px-4 py-2 border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value={ownerEmailInput} onChange={e => setOwnerEmailInput(e.target.value)} placeholder="john.doe@company.com" />
+          <label className="block text-sm font-semibold mb-1">Owner</label>
+          <input type="text" className="w-full px-4 py-2 border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" value={ownerEmailInput} onChange={e => setOwnerEmailInput(e.target.value)} placeholder="john.doe@company.com" />
         </div>
         <div>
           <label className="block text-sm font-semibold mb-1">IP Address</label>
@@ -397,7 +410,11 @@ const InventorySystemForm = ({
                       </div>
                       <div className="flex items-end">
                         {bulkComponents.length > 1 && (
-                          <button type="button" onClick={() => setBulkComponents(prev => prev.filter((_, i) => i !== index))} className="px-2 py-2 text-red-500 hover:text-red-700" title="Remove Component">
+                          <button type="button" onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this component?')) {
+                              setBulkComponents(prev => prev.filter((_, i) => i !== index));
+                            }
+                          }} className="px-2 py-2 text-red-500 hover:text-red-700" title="Remove Component">
                             <Trash2 size={16} />
                           </button>
                         )}

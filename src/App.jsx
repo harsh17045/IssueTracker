@@ -28,6 +28,7 @@ import Inventory from './pages/Dept/Inventory';
 import InventoryProtectedRoute from './components/InventoryProtectedRoute';
 import InventoryDetail from './pages/Dept/InventoryDetail';
 import ComponentSets from './pages/ComponentSets';
+import Logs from './pages/Logs';
 
 // Admin Routes Component
 const AdminRoutes = () => {
@@ -49,6 +50,7 @@ const AdminRoutes = () => {
             <Route path="/tickets/:ticketId" element={<TicketDetail />} />
             <Route path="/admin/inventory/:id" element={<InventoryDetail />} />
             <Route path="/component-sets" element={<ComponentSets />} />
+            <Route path="/logs" element={<Logs />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
           </Routes>
         </main>

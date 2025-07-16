@@ -25,7 +25,7 @@ import {
   Settings,
   Info,
 } from "lucide-react"
-import { getAllInventorySystems, addInventorySystem, getAllComponentSets, getLoggedInDepartmentalAdmin, getAllBuildingsForAdminIT } from "../../service/deptAuthService"
+import { getAllInventorySystems, addInventorySystem, getAllComponentSets, getLoggedInDepartmentalAdmin, getAllBuildingsForAdminIT, bulkUpdateInventoryLocation, bulkDeleteInventorySystems } from "../../service/deptAuthService"
 import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
 import InventorySystemForm from '../../components/InventorySystemForm';
@@ -35,6 +35,7 @@ const initialInventory = {
   systemName: "",
   systemType: "Desktop",
   modelNo: "",
+  manufacturer: "",
   designations: "",
   department: "",
   building: "",
@@ -89,6 +90,24 @@ function InventoryManagement() {
   const [errorMsg, setErrorMsg] = useState("");
   const [expandedSystemIndex, setExpandedSystemIndex] = useState(null);
   const [expandAll, setExpandAll] = useState(false);
+
+  // Bulk update location state
+  const [selectedSystems, setSelectedSystems] = useState([]);
+  const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
+  const [bulkUpdateLocation, setBulkUpdateLocation] = useState({
+    building: '',
+    floor: '',
+    labNumber: ''
+  });
+  const [bulkUpdateFloors, setBulkUpdateFloors] = useState([]);
+  const [bulkUpdateLabs, setBulkUpdateLabs] = useState([]);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+
+  // Bulk delete state
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const initializeData = async () => {
@@ -335,25 +354,22 @@ function InventoryManagement() {
 
   // Filtered systems for table
   const filteredSystems = allSystems.filter(system => {
-    let matches = true;
-    // Restrict for network engineers
-    if (networkLocations.length > 0) {
-      matches = networkLocations.some(loc =>
-        (system.building === loc.building._id || system.building?._id === loc.building._id) &&
-        String(system.floor) === String(loc.floor) &&
-        Array.isArray(loc.labs) && loc.labs.includes(system.labNumber)
-      );
-    }
-    if (filterBuilding) {
-      matches = matches && (system.building === filterBuilding || system.building?._id === filterBuilding);
-    }
-    if (filterFloor) {
-      matches = matches && system.floor === filterFloor;
-    }
-    if (filterLab) {
-      matches = matches && system.labNumber === filterLab;
-    }
-    return matches;
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (system.tag && system.tag.toLowerCase().includes(q)) ||
+      (system.systemName && system.systemName.toLowerCase().includes(q)) ||
+      (system.modelNo && system.modelNo.toLowerCase().includes(q)) ||
+      (system.ownerEmail && system.ownerEmail.toLowerCase().includes(q)) ||
+      (system.addedBy && (
+        (system.addedBy.name && system.addedBy.name.toLowerCase().includes(q)) ||
+        (system.addedBy.email && system.addedBy.email.toLowerCase().includes(q))
+      )) ||
+      (system.updatedBy && (
+        (system.updatedBy.name && system.updatedBy.name.toLowerCase().includes(q)) ||
+        (system.updatedBy.email && system.updatedBy.email.toLowerCase().includes(q))
+      ))
+    );
   });
   const indexOfLastSystem = currentPage * systemsPerPage;
   const indexOfFirstSystem = indexOfLastSystem - systemsPerPage;
@@ -390,6 +406,134 @@ function InventoryManagement() {
     setShowBulkAdd(true);
   };
 
+  // Bulk update location functions
+  const handleSystemSelection = (systemId) => {
+    setSelectedSystems(prev => 
+      prev.includes(systemId) 
+        ? prev.filter(id => id !== systemId)
+        : [...prev, systemId]
+    );
+  };
+
+  const handleSelectAllSystems = () => {
+    if (selectedSystems.length === currentSystems.filter(Boolean).length) {
+      setSelectedSystems([]);
+    } else {
+      setSelectedSystems(currentSystems.filter(Boolean).map(system => system._id));
+    }
+  };
+
+  const handleSelectAllSystemsAcrossPages = () => {
+    if (selectedSystems.length === filteredSystems.length) {
+      setSelectedSystems([]);
+    } else {
+      setSelectedSystems(filteredSystems.map(system => system._id));
+    }
+  };
+
+  const handleBulkUpdateLocationChange = (field, value) => {
+    setBulkUpdateLocation(prev => {
+      const newLocation = { ...prev, [field]: value };
+      
+      // Update floors when building changes
+      if (field === 'building') {
+        if (networkLocations.length > 0) {
+          const floorsSet = new Set();
+          networkLocations.forEach(loc => {
+            if (loc.building._id === value) {
+              floorsSet.add(loc.floor.toString());
+            }
+          });
+          setBulkUpdateFloors(Array.from(floorsSet));
+          setBulkUpdateLabs([]);
+          return { ...newLocation, floor: "", labNumber: "" };
+        } else {
+          const selectedBuilding = buildings.find(b => b._id === value);
+          if (selectedBuilding && selectedBuilding.floors) {
+            const availableFloors = selectedBuilding.floors.map(f => f.floor.toString());
+            setBulkUpdateFloors(availableFloors);
+            setBulkUpdateLabs([]);
+            return { ...newLocation, floor: "", labNumber: "" };
+          }
+        }
+      }
+      
+      // Update labs when floor changes
+      if (field === 'floor') {
+        if (networkLocations.length > 0) {
+          const labsSet = new Set();
+          networkLocations.forEach(loc => {
+            if (
+              loc.building._id === newLocation.building &&
+              loc.floor.toString() === value
+            ) {
+              (loc.labs || []).forEach(lab => labsSet.add(lab));
+            }
+          });
+          setBulkUpdateLabs(Array.from(labsSet));
+          return { ...newLocation, labNumber: "" };
+        } else {
+          const selectedBuilding = buildings.find(b => b._id === newLocation.building);
+          if (selectedBuilding && selectedBuilding.floors) {
+            const selectedFloor = selectedBuilding.floors.find(f => f.floor.toString() === value);
+            if (selectedFloor && selectedFloor.labs) {
+              setBulkUpdateLabs(selectedFloor.labs);
+              return { ...newLocation, labNumber: "" };
+            }
+          }
+        }
+      }
+      
+      return newLocation;
+    });
+  };
+
+  const handleBulkUpdateLocation = async () => {
+    if (selectedSystems.length === 0) {
+      toast.error("Please select at least one system to update");
+      return;
+    }
+
+    if (!bulkUpdateLocation.building || !bulkUpdateLocation.floor || !bulkUpdateLocation.labNumber) {
+      toast.error("Please fill in all location fields");
+      return;
+    }
+
+    const buildingName = buildings.find(b => b._id === bulkUpdateLocation.building)?.name;
+    if (!buildingName) {
+      toast.error("Invalid building selected");
+      return;
+    }
+
+    setIsBulkUpdating(true);
+    try {
+      const result = await bulkUpdateInventoryLocation(
+        selectedSystems,
+        buildingName,
+        bulkUpdateLocation.floor,
+        bulkUpdateLocation.labNumber
+      );
+
+      if (result.success) {
+        toast.success(result.message);
+        setSelectedSystems([]);
+        setShowBulkUpdateModal(false);
+        setBulkUpdateLocation({ building: '', floor: '', labNumber: '' });
+        // Refresh the inventory data
+        await fetchInventorySystems();
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error("Failed to update locations: " + error.message);
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
+  // Calculate total subsystems
+  const totalSubsystems = allSystems.reduce((sum, sys) => sum + (Array.isArray(sys.components) ? sys.components.length : 0), 0);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
       
@@ -398,26 +542,79 @@ function InventoryManagement() {
         {/* Main Content: Inventory List or Add System Form */}
         {!showAddSystemForm ? (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-100 via-indigo-100 to-blue-200 text-indigo-900 p-8 flex items-center justify-between shadow-sm">
-              <div className="mb-6 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-blue-100 via-indigo-100 to-blue-200 text-indigo-900 p-8 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-indigo-900 flex items-center gap-3">
                   <Building2 className="h-7 w-7" />
                   Inventory Systems
                 </h2>
-                <span className="inline-block bg-indigo-100 text-indigo-700 font-semibold px-4 py-2 ">
-                  Total: {allSystems.length}
-                </span>
+                <div className="flex gap-2">
+                  <span className="inline-block bg-indigo-100 text-indigo-700 font-semibold px-4 py-2 rounded-lg">
+                    Total: {allSystems.length} | Subsystems: {totalSubsystems}
+                  </span>
+                  {selectedSystems.length > 0 && (
+                    <span className="inline-block bg-green-100 text-green-700 font-semibold px-4 py-2 rounded-lg">
+                      Selected: {selectedSystems.length}
+                    </span>
+                  )}
+                </div>
               </div>
-              <button
-                onClick={() => setShowAddSystemForm(true)}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow"
-              >
-                <Plus className="h-5 w-5 inline-block mr-1" /> Add New System
-              </button>
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSelectAllSystems}
+                    className="px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 font-medium shadow"
+                  >
+                    {selectedSystems.length === currentSystems.filter(Boolean).length && currentSystems.filter(Boolean).length > 0 ? 'Deselect Page' : 'Select Page'}
+                  </button>
+                  <button
+                    onClick={handleSelectAllSystemsAcrossPages}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium shadow"
+                  >
+                    {selectedSystems.length === filteredSystems.length && filteredSystems.length > 0 ? 'Deselect All' : 'Select All'}
+                  </button>
+                  {selectedSystems.length > 0 && (
+                    <>
+                      <button
+                        onClick={() => setShowBulkUpdateModal(true)}
+                        className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:from-green-600 hover:to-emerald-600 focus:outline-none focus:ring-2 focus:ring-green-500 font-medium shadow"
+                      >
+                        <Settings className="h-5 w-5 inline-block mr-1" />
+                        Update Location ({selectedSystems.length})
+                      </button>
+                      <button
+                        onClick={() => setShowBulkDeleteModal(true)}
+                        className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium shadow"
+                        disabled={isBulkDeleting}
+                      >
+                        <Trash2 className="h-5 w-5 inline-block mr-1" />
+                        Delete ({selectedSystems.length})
+                      </button>
+                    </>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowAddSystemForm(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow"
+                >
+                  <Plus className="h-5 w-5 inline-block mr-1" /> Add New System
+                </button>
+              </div>
             </div>
             <div className="p-6">
-              {/* Inventory Filters */}
+              {/* Inventory Search and Filters */}
               <div className="flex flex-wrap gap-4 mb-4 items-end justify-between">
+                <div className="flex flex-col gap-2 min-w-[220px]">
+                  <label className="text-xs font-semibold text-gray-700 mb-0">Search Inventory</label>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search by tag, name, model, or owner email..."
+                    className="border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-blue-300 focus:border-blue-400 transition w-full bg-white/80 shadow-sm"
+                  />
+                </div>
+                {/* Existing filters below */}
                 <div className="flex flex-wrap gap-4 items-end">
                   <div className="flex flex-col gap-2 min-w-[180px]">
                     <label className="text-xs font-semibold text-gray-700 mb-0">Filter by Building</label>
@@ -448,9 +645,26 @@ function InventoryManagement() {
                       disabled={!filterBuilding}
                     >
                       <option value="">All Floors</option>
-                      {filterBuilding && buildings.find(b => b._id === filterBuilding)?.floors?.map(f => (
-                        <option key={f.floor} value={f.floor}>{f.floor}</option>
-                      ))}
+                      {filterBuilding && (() => {
+                        if (networkLocations.length > 0) {
+                          // For network engineer
+                          const floorsSet = new Set();
+                          networkLocations.forEach(loc => {
+                            if (loc.building._id === filterBuilding) {
+                              floorsSet.add(loc.floor.toString());
+                            }
+                          });
+                          return Array.from(floorsSet).map(floor => (
+                            <option key={floor} value={floor}>Floor {floor}</option>
+                          ));
+                        } else {
+                          // For regular users
+                          const selectedBuilding = buildings.find(b => b._id === filterBuilding);
+                          return selectedBuilding?.floors?.map(f => (
+                            <option key={f.floor} value={f.floor}>Floor {f.floor}</option>
+                          )) || [];
+                        }
+                      })()}
                     </select>
                   </div>
                   <div className="flex flex-col gap-2 min-w-[120px]">
@@ -463,11 +677,28 @@ function InventoryManagement() {
                     >
                       <option value="">All Labs</option>
                       {filterBuilding && filterFloor && (() => {
-                        const building = buildings.find(b => b._id === filterBuilding);
-                        const floorObj = building?.floors?.find(f => f.floor.toString() === filterFloor);
-                        return (floorObj?.labs || []).map(lab => (
-                          <option key={lab} value={lab}>{lab}</option>
-                        ));
+                        if (networkLocations.length > 0) {
+                          // For network engineer
+                          const labsSet = new Set();
+                          networkLocations.forEach(loc => {
+                            if (
+                              loc.building._id === filterBuilding &&
+                              loc.floor.toString() === filterFloor
+                            ) {
+                              (loc.labs || []).forEach(lab => labsSet.add(lab));
+                            }
+                          });
+                          return Array.from(labsSet).map(lab => (
+                            <option key={lab} value={lab}>{lab}</option>
+                          ));
+                        } else {
+                          // For regular users
+                          const building = buildings.find(b => b._id === filterBuilding);
+                          const floorObj = building?.floors?.find(f => f.floor.toString() === filterFloor);
+                          return (floorObj?.labs || []).map(lab => (
+                            <option key={lab} value={lab}>{lab}</option>
+                          ));
+                        }
                       })()}
                     </select>
                   </div>
@@ -502,21 +733,30 @@ function InventoryManagement() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gradient-to-r from-blue-100 via-indigo-100 to-blue-200 sticky top-0 z-10">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tag</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">System Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Building</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Floor</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Lab</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Components</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Created At</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Last Edited</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Edited By</th>
+                                              <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                          <input
+                            type="checkbox"
+                            checked={selectedSystems.length === currentSystems.filter(Boolean).length && currentSystems.filter(Boolean).length > 0}
+                            onChange={handleSelectAllSystems}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                        </th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tag</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">System Name</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Building</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Floor</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Lab</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Components</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Added By</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Created At</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Last Edited</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Edited By</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {allSystems.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="text-center py-8 text-gray-400">
+                        <td colSpan={11} className="text-center py-8 text-gray-400">
                           No systems found.
                         </td>
                       </tr>
@@ -527,15 +767,22 @@ function InventoryManagement() {
                           (
                             <tr
                               key={system._id || index}
-                              className={`hover:bg-indigo-50 cursor-pointer transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                              onClick={() => navigate(`/dept/inventory/${system._id}`)}
+                              className={`hover:bg-indigo-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${selectedSystems.includes(system._id) ? 'ring-2 ring-indigo-200 bg-indigo-50' : ''}`}
                             >
-                              <td className="px-6 py-4">{system.tag}</td>
-                              <td className="px-6 py-4 font-medium text-gray-900">{system.systemName}</td>
-                              <td className="px-6 py-4">{system.buildingName || system.building?.name || ''}</td>
-                              <td className="px-6 py-4">{system.floor}</td>
-                              <td className="px-6 py-4">{system.labNumber}</td>
-                              <td className="px-6 py-4 text-center">
+                              <td className="px-4 py-2">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSystems.includes(system._id)}
+                                  onChange={() => handleSystemSelection(system._id)}
+                                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                />
+                              </td>
+                              <td className="px-4 py-2 cursor-pointer text-sm" onClick={() => navigate(`/dept/inventory/${system._id}`)}>{system.tag}</td>
+                              <td className="px-4 py-2 font-medium text-gray-900 cursor-pointer text-sm" onClick={() => navigate(`/dept/inventory/${system._id}`)}>{system.systemName}</td>
+                              <td className="px-4 py-2 cursor-pointer text-sm" onClick={() => navigate(`/dept/inventory/${system._id}`)}>{system.buildingName || system.building?.name || ''}</td>
+                              <td className="px-4 py-2 cursor-pointer text-sm" onClick={() => navigate(`/dept/inventory/${system._id}`)}>{system.floor}</td>
+                              <td className="px-4 py-2 cursor-pointer text-sm" onClick={() => navigate(`/dept/inventory/${system._id}`)}>{system.labNumber}</td>
+                              <td className="px-4 py-2 text-center">
                                 <button
                                   type="button"
                                   className="text-indigo-600 hover:underline text-xs font-semibold"
@@ -547,14 +794,15 @@ function InventoryManagement() {
                                   {isExpanded ? 'Hide' : 'View'}
                                 </button>
                               </td>
-                              <td className="px-6 py-4 text-xs">{system.createdAt ? new Date(system.createdAt).toLocaleString() : '-'}</td>
-                              <td className="px-6 py-4 text-xs">{system.updatedAt ? new Date(system.updatedAt).toLocaleString() : '-'}</td>
-                              <td className="px-6 py-4 text-xs">{system.editedBy?.name || system.addedBy?.name || '-'}</td>
+                              <td className="px-4 py-2 text-xs cursor-pointer" onClick={() => navigate(`/dept/inventory/${system._id}`)}>{system.addedBy?.name || '-'}</td>
+                              <td className="px-4 py-2 text-xs cursor-pointer" onClick={() => navigate(`/dept/inventory/${system._id}`)}>{system.createdAt ? new Date(system.createdAt).toLocaleString() : '-'}</td>
+                              <td className="px-4 py-2 text-xs cursor-pointer" onClick={() => navigate(`/dept/inventory/${system._id}`)}>{system.updatedAt ? new Date(system.updatedAt).toLocaleString() : '-'}</td>
+                              <td className="px-4 py-2 text-xs cursor-pointer" onClick={() => navigate(`/dept/inventory/${system._id}`)}>{system.updatedBy?.name || system.addedBy?.name || '-'}</td>
                             </tr>
                           ),
                           isExpanded && (
                             <tr key={`expanded-${system._id || index}`}>
-                              <td colSpan={9} className="bg-indigo-50 px-6 py-4">
+                              <td colSpan={11} className="bg-indigo-50 px-4 py-2">
                                 <div>
                                   <strong>Components:</strong>
                                   {Array.isArray(system.components) && system.components.length > 0 ? (
@@ -721,11 +969,9 @@ function InventoryManagement() {
                     className="w-full px-4 py-3 text-sm border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-300"
                   >
                     <option value="">Select System Type</option>
-                    <option value="Desktop">Desktop</option>
-                    <option value="Laptop">Laptop</option>
-                    <option value="Printer">Printer</option>
-                    <option value="Scanner">Scanner</option>
-                    <option value="Other">Other</option>
+                    {componentSets.map(set => (
+                      <option key={set.name} value={set.name}>{set.name}</option>
+                    ))}
                   </select>
                 </div>
                 {/* Model No. */}
@@ -736,6 +982,17 @@ function InventoryManagement() {
                     value={inventory.modelNo}
                     onChange={(e) => handleInventoryChange("modelNo", e.target.value)}
                     placeholder="e.g., HP-1234"
+                    className="w-full px-4 py-3 text-sm border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-300"
+                  />
+                </div>
+                {/* Manufacturer */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">Manufacturer</label>
+                  <input
+                    type="text"
+                    value={inventory.manufacturer}
+                    onChange={(e) => handleInventoryChange("manufacturer", e.target.value)}
+                    placeholder="e.g., HP, Dell, Lenovo"
                     className="w-full px-4 py-3 text-sm border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-300"
                   />
                 </div>
@@ -753,14 +1010,12 @@ function InventoryManagement() {
                 {/* Owner Email */}
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-gray-500" />
-                    Owner Email
+                    Owner
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     value={inventory.ownerEmail}
                     onChange={(e) => handleInventoryChange("ownerEmail", e.target.value)}
-                    placeholder="john.doe@company.com"
                     className="w-full px-4 py-3 text-sm border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 hover:border-gray-300"
                   />
                 </div>
@@ -969,6 +1224,182 @@ function InventoryManagement() {
                   🚀 Add System to Inventory
                 </button>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Update Location Modal */}
+        {showBulkUpdateModal && (
+          <div className="fixed inset-0 bg-white/30 backdrop-blur-md flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+              <div className="bg-gradient-to-r from-green-100 via-emerald-100 to-green-200 text-green-900 p-6 rounded-t-2xl">
+                <h3 className="text-xl font-bold flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-200 rounded-xl flex items-center justify-center">
+                    <Settings className="h-5 w-5 text-green-600" />
+                  </div>
+                  Bulk Update Location
+                </h3>
+                <p className="text-sm text-green-700 mt-2">
+                  Update location for {selectedSystems.length} selected system(s)
+                </p>
+              </div>
+              <div className="p-6 space-y-4">
+                {/* Building */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-gray-500" />
+                    Building *
+                  </label>
+                  <select
+                    value={bulkUpdateLocation.building}
+                    onChange={(e) => {
+                      console.log('Building selected:', e.target.value);
+                      console.log('Available buildings:', buildings);
+                      handleBulkUpdateLocationChange("building", e.target.value);
+                    }}
+                    required
+                    className="w-full px-4 py-3 text-sm border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 hover:border-gray-300"
+                  >
+                    <option value="">Select Building</option>
+                    {buildings.length > 0 ? (
+                      buildings.map((building) => (
+                        <option key={building._id} value={building._id}>
+                          {building.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No buildings available</option>
+                    )}
+                  </select>
+                </div>
+
+                {/* Floor */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-gray-500" />
+                    Floor *
+                  </label>
+                  <select
+                    value={bulkUpdateLocation.floor}
+                    onChange={(e) => {
+                      console.log('Floor selected:', e.target.value);
+                      console.log('Available floors:', bulkUpdateFloors);
+                      console.log('Current building:', bulkUpdateLocation.building);
+                      handleBulkUpdateLocationChange("floor", e.target.value);
+                    }}
+                    required
+                    disabled={!bulkUpdateLocation.building}
+                    className="w-full px-4 py-3 text-sm border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select Floor</option>
+                    {bulkUpdateFloors.length > 0 ? (
+                      bulkUpdateFloors.map((floor) => (
+                        <option key={floor} value={floor}>
+                          Floor {floor}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No floors available</option>
+                    )}
+                  </select>
+                </div>
+
+                {/* Lab */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-gray-500" />
+                    Lab *
+                  </label>
+                  <select
+                    value={bulkUpdateLocation.labNumber}
+                    onChange={(e) => handleBulkUpdateLocationChange("labNumber", e.target.value)}
+                    required
+                    disabled={!bulkUpdateLocation.floor}
+                    className="w-full px-4 py-3 text-sm border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 hover:border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select Lab</option>
+                    {bulkUpdateLabs.map((lab) => (
+                      <option key={lab} value={lab}>
+                        {lab}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={handleBulkUpdateLocation}
+                    disabled={isBulkUpdating}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isBulkUpdating ? 'Updating...' : 'Update Location'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowBulkUpdateModal(false);
+                      setBulkUpdateLocation({ building: '', floor: '', labNumber: '' });
+                    }}
+                    disabled={isBulkUpdating}
+                    className="px-6 py-3 border-2 border-gray-300 rounded-xl bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Delete Modal */}
+        {showBulkDeleteModal && (
+          <div className="fixed inset-0 bg-white/30 backdrop-blur-md flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+              <div className="bg-gradient-to-r from-red-100 via-pink-100 to-red-200 text-red-900 p-6 rounded-t-2xl">
+                <h3 className="text-xl font-bold flex items-center gap-3">
+                  <div className="w-8 h-8 bg-red-200 rounded-xl flex items-center justify-center">
+                    <Trash2 className="h-5 w-5 text-red-600" />
+                  </div>
+                  Confirm Delete
+                </h3>
+                <p className="text-sm text-red-700 mt-2">
+                  Are you sure you want to delete {selectedSystems.length} selected system(s)? This action cannot be undone.
+                </p>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={async () => {
+                      setIsBulkDeleting(true);
+                      try {
+                        const result = await bulkDeleteInventorySystems(selectedSystems);
+                        if (result.success) {
+                          toast.success(result.message);
+                          setSelectedSystems([]);
+                          setShowBulkDeleteModal(false);
+                          await fetchInventorySystems();
+                        } else {
+                          toast.error(result.message);
+                        }
+                      } catch (error) {
+                        toast.error("Failed to delete systems: " + error.message);
+                      } finally {
+                        setIsBulkDeleting(false);
+                      }
+                    }}
+                    disabled={isBulkDeleting}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-200 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isBulkDeleting ? 'Deleting...' : 'Confirm Delete'}
+                  </button>
+                  <button
+                    onClick={() => setShowBulkDeleteModal(false)}
+                    disabled={isBulkDeleting}
+                    className="px-6 py-3 border-2 border-gray-300 rounded-xl bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

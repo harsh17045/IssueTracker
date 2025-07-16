@@ -471,7 +471,7 @@ export const getAllBuildingsForAdminIT = async () => {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-      },
+        },
     });
     const data = await res.json();
     if (res.ok && Array.isArray(data.buildings)) {
@@ -541,5 +541,76 @@ export const exportDeptInventoryReportExcel = async ({
   // Return the blob for Excel download
   const blob = await response.blob();
   return blob;
+};
+
+export const bulkUpdateInventoryLocation = async (systemIds, buildingName, floor, labNumber) => {
+  const token = getDeptAdminToken();
+  if (!token) {
+    return {
+      success: false,
+      message: 'Authentication token not found'
+    };
+  }
+
+  const response = await fetch(`${API_URL}/bulk-update-location`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      systemIds,
+      buildingName,
+      floor,
+      labNumber
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    return {
+      success: false,
+      message: data.message || 'Failed to bulk update inventory locations'
+    };
+  }
+
+  return {
+    success: true,
+    message: data.message || 'Inventory locations updated successfully',
+    data: data
+  };
+};
+
+export const bulkDeleteInventorySystems = async (ids) => {
+  const token = getDeptAdminToken();
+  if (!token) {
+    return {
+      success: false,
+      message: 'Authentication token not found'
+    };
+  }
+
+  const response = await fetch(`${API_URL}/delete-system`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ ids })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    return {
+      success: false,
+      message: data.message || 'Failed to delete inventory system(s)'
+    };
+  }
+
+  return {
+    success: true,
+    message: data.message || 'Inventory system(s) deleted successfully',
+    data: data
+  };
 };
 

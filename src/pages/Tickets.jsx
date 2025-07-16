@@ -90,7 +90,8 @@ const Tickets = () => {
     ? sortTickets(tickets[currentDepartment].filter(ticket => {
         const matchesSearch = 
           ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
+          ticket.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (ticket.ticket_id && ticket.ticket_id.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesStatus = !statusFilter || ticket.status === statusFilter;
         return matchesSearch && matchesStatus;
       }))
@@ -183,6 +184,7 @@ const Tickets = () => {
                       <span className="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
                     )}
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket ID</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">From</th>
                   <th 
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
@@ -229,6 +231,7 @@ const Tickets = () => {
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">{ticket.title}</div>
                       </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{ticket.ticket_id}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{ticket.from_department}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${

@@ -141,7 +141,8 @@ const DepartmentTickets = () => {
   const filteredTickets = sortTickets(tickets.filter(ticket => {
     const matchesSearch = 
       ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (ticket.description && ticket.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      (ticket.description && ticket.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (ticket.ticket_id && ticket.ticket_id.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus = !statusFilter || ticket.status === statusFilter;
     return matchesSearch && matchesStatus;
   }));
@@ -253,7 +254,7 @@ const DepartmentTickets = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Search tickets by title or description..."
+              placeholder="Search tickets by title, description, or ID..."
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -293,7 +294,7 @@ const DepartmentTickets = () => {
                     )}
                   </div>
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Raised By</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Ticket ID</th>
                 <th 
                   className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => handleSort('status')}
@@ -370,10 +371,8 @@ const DepartmentTickets = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
-                          {ticket.raised_by?.name || 'N/A'}
-                        </div>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {ticket.ticket_id || 'N/A'}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
