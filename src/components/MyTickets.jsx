@@ -1,6 +1,6 @@
 import { Bug, Edit2, X, Check, ChevronDown, ChevronUp, CalendarIcon, Filter, ChevronLeft, ChevronRight, Search, Eye, Clock, CheckCircle, AlertCircle, XCircle, Ticket, Building2, Calendar, User, FileText, Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getMyTickets, getAllDepartments, revokeTicket, filterTickets } from '../services/authService';
+import { getMyTickets, getAllDepartments, filterTickets } from '../services/authService';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -59,19 +59,6 @@ const MyTickets = () => {
     fetchDepartments();
   }, []);
 
-  const handleRevokeTicket = async (ticketId) => {
-    try {
-      await revokeTicket(ticketId);
-      const updatedTickets = tickets.map(ticket =>
-        ticket._id === ticketId ? { ...ticket, status: 'revoked' } : ticket
-      );
-      setTickets(updatedTickets);
-      toast.success('Ticket revoked successfully');
-    } catch (error) {
-      toast.error(error.message || 'Failed to revoke ticket');
-    }
-  };
-
   const handleFilter = async () => {
     try {
       setLoading(true);
@@ -97,7 +84,8 @@ const MyTickets = () => {
 
   const filteredTickets = tickets.filter(ticket =>
     ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.description.toLowerCase().includes(searchTerm.toLowerCase())
+    ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (ticket.ticket_id && ticket.ticket_id.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Status badge color
@@ -109,13 +97,6 @@ const MyTickets = () => {
       case 'revoked': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
-  };
-
-  // Priority badge color
-  const priorityBadge = (priority) => {
-    if (priority === 'high') return 'bg-red-100 text-red-700';
-    if (priority === 'low') return 'bg-gray-100 text-gray-700';
-    return '';
   };
 
   return (
@@ -143,7 +124,7 @@ const MyTickets = () => {
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4B2D87] bg-gray-50"
-            placeholder="Search tickets by title or description..."
+            placeholder="Search tickets by title, description, or Ticket ID..."
           />
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
         </div>
@@ -258,50 +239,34 @@ const MyTickets = () => {
             </button>
           </div>
         ) : (
-          filteredTickets.slice(startIndex, endIndex).map((ticket) => (
-            <div
-              key={ticket._id}
-              className="bg-white rounded-xl border border-gray-100 shadow-md hover:shadow-lg transition p-5 flex flex-col md:flex-row md:items-center md:justify-between cursor-pointer group"
-              onClick={() => navigate(`/my-tickets/${ticket._id}`)}
-            >
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className="text-lg font-bold text-[#4B2D87] group-hover:underline">{ticket.title}</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ml-2 ${statusBadge(ticket.status)}`}>{ticket.status.replace('_', ' ').toUpperCase()}</span>
-                  {['high', 'low'].includes(ticket.priority) && (
-                    <span className={`ml-2 px-2 py-1 rounded-full text-xs font-bold ${priorityBadge(ticket.priority)}`}>{ticket.priority.toUpperCase()} PRIORITY</span>
-                  )}
-                </div>
-                <div className="text-xs text-gray-500 mb-1">
-                  {ticket.to_department?.name || 'Unknown Department'} &bull; {format(new Date(ticket.createdAt), 'MMM dd, yyyy - h:mm a')}
-                </div>
-                <div className="text-sm text-gray-700 line-clamp-2">{ticket.description}</div>
-              </div>
-              <div className="flex items-center gap-2 mt-3 md:mt-0">
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    navigate(`/my-tickets/${ticket._id}`);
-                  }}
-                  className="p-2 rounded-full hover:bg-gray-100"
-                  title="View"
-                >
-                  <Eye size={18} className="text-[#4B2D87]" />
-                </button>
-                {ticket.status === 'pending' && (
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleRevokeTicket(ticket._id);
-                    }}
-                    className="px-3 py-1 text-xs font-medium text-red-600 bg-red-100 rounded-full hover:bg-red-200 transition"
-                  >
-                    Revoke
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white rounded-lg shadow-md">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Title</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Ticket ID</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Department</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Created</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTickets.slice(startIndex, endIndex).map(ticket => (
+                  <tr key={ticket._id} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/ticket/${ticket._id}`)}>
+                    <td className="px-4 py-2">{ticket.title}</td>
+                    <td className="px-4 py-2 text-sm text-gray-500">{ticket.ticket_id}</td>
+                    <td className={`px-4 py-2 text-xs font-semibold rounded-full ${statusBadge(ticket.status)}`}>{ticket.status}</td>
+                    <td className="px-4 py-2">{ticket.to_department?.name || ticket.to_department}</td>
+                    <td className="px-4 py-2">{format(new Date(ticket.createdAt), 'dd/MM/yyyy')}</td>
+                    <td className="px-4 py-2 text-right">
+                      {/* Actions here */}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
