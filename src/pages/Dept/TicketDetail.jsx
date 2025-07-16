@@ -101,18 +101,10 @@ const TicketDetail = () => {
     }
   };
 
-  const formatAttachmentName = (attachmentName) => {
+  // Helper function to get attachment name before first underscore
+  const getAttachmentDisplayName = (attachmentName) => {
     if (!attachmentName) return '';
-    
-    // Split by dash and get the last part (filename)
-    const parts = attachmentName.split('-');
-    if (parts.length > 1) {
-      // Remove the first part (timestamp) and join the rest
-      return parts.slice(1).join('-');
-    }
-    
-    // If no dash found, return the original name
-    return attachmentName;
+    return attachmentName.split('_')[0];
   };
 
   const handleAttachmentClick = async (attachmentName) => {
@@ -403,7 +395,7 @@ const TicketDetail = () => {
                   <div className="flex items-center gap-3">
                     <FileText size={20} className="text-gray-400" />
                     <div>
-                      <p className="font-medium text-gray-900">{formatAttachmentName(ticket.attachment)}</p>
+                      <p className="font-medium text-gray-900">{getAttachmentDisplayName(ticket.attachment)}</p>
                       <p className="text-sm text-gray-500">Click to preview or download</p>
                     </div>
                   </div>
@@ -481,7 +473,7 @@ const TicketDetail = () => {
                       <div className="mt-2 flex flex-col gap-2">
                         <div className="flex items-center gap-2">
                           <FileText size={16} className="text-gray-400" />
-                          <span className="text-xs text-gray-700">{formatAttachmentName(comment.attachment)}</span>
+                          <span className="text-xs text-gray-700">{getAttachmentDisplayName(comment.attachment)}</span>
                           <button
                             type="button"
                             onClick={() => handleCommentAttachmentPreview(comment.attachment, idx)}

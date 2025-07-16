@@ -112,11 +112,7 @@ const TicketDetail = () => {
               </span>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Priority</p>
-                <p className="text-base text-gray-900 capitalize">{ticket.priority}</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div>
                 <p className="text-sm font-medium text-gray-500">From Department</p>
                 <p className="text-base text-gray-900">{ticket.from_department}</p>
@@ -148,7 +144,7 @@ const TicketDetail = () => {
                   className="inline-flex items-center text-[#4B2D87] hover:underline"
                 >
                   <span className="mr-2">
-                    {ticket.attachment.split('-').pop()}
+                    {ticket.attachment.split('_')[0]}
                   </span>
                 </button>
 

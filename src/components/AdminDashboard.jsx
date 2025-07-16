@@ -240,7 +240,7 @@ const AdminDashboard = () => {
                         </p>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-500">
-                            #{ticket._id.slice(-6)} {/* Display the last 6 characters of the ID */}
+                            {ticket.ticket_id} {/* Display the last 6 characters of the ID */}
                           </span>
                           <div
                             className={`w-2 h-2 rounded-full bg-gradient-to-r ${column.color}`}
