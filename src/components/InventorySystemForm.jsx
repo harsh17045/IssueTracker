@@ -432,23 +432,63 @@ const InventorySystemForm = ({
 
           {form.components && form.components.length > 0 && (
             <div className="space-y-4">
-              <h4 className="font-semibold text-gray-700 flex items-center gap-2"><Package className="h-5 w-5 text-indigo-600" />Added Components ({form.components.length})</h4>
+              <h4 className="font-semibold text-gray-700 flex items-center gap-2"><Package className="h-5 w-5 text-indigo-600" />Edit Components ({form.components.length})</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {form.components.map((comp, index) => (
                   <div key={index} className="bg-white border-l-4 border-l-indigo-500 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 group">
-                    <div className="p-4">
+                    <div className="p-4 space-y-2">
                       <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
-                            <Package className="h-5 w-5 text-indigo-600" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-800">{comp.componentType}</p>
-                            <p className="text-sm text-gray-500">Tag: {comp.tag}</p>
-                            {comp.modelNumber && (<p className="text-xs text-gray-400">{comp.manufacturer} {comp.modelNumber}</p>)}
-                          </div>
+                        <div className="flex flex-col gap-2 w-full">
+                          <label className="block text-xs font-semibold text-gray-700">Component Type</label>
+                          <select
+                            value={comp.componentType}
+                            onChange={e => setForm(prev => ({
+                              ...prev,
+                              components: prev.components.map((c, i) => i === index ? { ...c, componentType: e.target.value } : c)
+                            }))}
+                            className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                          >
+                            <option value="">Select Type</option>
+                            {componentTypes.map((type) => (<option key={type} value={type}>{type}</option>))}
+                            {isCustomComponentType(comp.componentType) && (<option value={comp.componentType}>{comp.componentType}</option>)}
+                            <option value="Other">Other</option>
+                          </select>
+                          <label className="block text-xs font-semibold text-gray-700 mt-2">Tag Number *</label>
+                          <input
+                            type="text"
+                            value={comp.tag}
+                            onChange={e => setForm(prev => ({
+                              ...prev,
+                              components: prev.components.map((c, i) => i === index ? { ...c, tag: e.target.value } : c)
+                            }))}
+                            placeholder="e.g., CPU-001"
+                            required
+                            className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                          />
+                          <label className="block text-xs font-semibold text-gray-700 mt-2">Model</label>
+                          <input
+                            type="text"
+                            value={comp.modelNumber}
+                            onChange={e => setForm(prev => ({
+                              ...prev,
+                              components: prev.components.map((c, i) => i === index ? { ...c, modelNumber: e.target.value } : c)
+                            }))}
+                            placeholder="Model"
+                            className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                          />
+                          <label className="block text-xs font-semibold text-gray-700 mt-2">Manufacturer</label>
+                          <input
+                            type="text"
+                            value={comp.manufacturer}
+                            onChange={e => setForm(prev => ({
+                              ...prev,
+                              components: prev.components.map((c, i) => i === index ? { ...c, manufacturer: e.target.value } : c)
+                            }))}
+                            placeholder="Brand"
+                            className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                          />
                         </div>
-                        <button type="button" onClick={() => removeComponent(index)} className="w-8 h-8 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 hover:text-red-700 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100"><Trash2 className="h-4 w-4" /></button>
+                        <button type="button" onClick={() => removeComponent(index)} className="w-8 h-8 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 hover:text-red-700 transition-all duration-200 flex items-center justify-center ml-2 mt-2"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </div>
                   </div>
