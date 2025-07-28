@@ -135,7 +135,7 @@ export const AuthProvider = ({ children }) => {
       socketRef.current = null;
     }
 
-    const socket = io("http://localhost:5000", {
+    const socket = io(import.meta.env.VITE_API_URL, {
       transports: ["polling", "websocket"],
       withCredentials: true,
       timeout: 20000,
