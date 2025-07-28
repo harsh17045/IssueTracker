@@ -16,12 +16,7 @@ const server = http.createServer(app)
 // Create Socket.IO server
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:5173", // Employee frontend
-      "http://localhost:5174", // Admin frontend
-      "http://localhost:5175", // Admin frontend
-      "http://localhost:5176",
-    ],
+    origin: "*",
     credentials: true,
     methods: ["GET", "POST"],
   },
