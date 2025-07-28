@@ -17,7 +17,6 @@ const AdminDashboard = () => {
     const fetchTickets = async () => {
       try {
         const tickets = await getAllTickets();
-        console.log("hii",tickets._id);
         // Group tickets by status
         const pending = tickets.filter(ticket => ticket.status === 'pending');
         const in_progress = tickets.filter(ticket => ticket.status === 'in_progress');

@@ -1,10 +1,6 @@
-const API_URL ='http://localhost:5000/api/dept-admin';
+const API_URL =`${import.meta.env.VITE_API_URL}/api/dept-admin`;
 
 const ALL_STATUSES = ['pending', 'in_progress', 'resolved', 'revoked'];
-
-// Inventory APIs (moved from inventoryService.js)
-const DEPT_API_URL = "http://localhost:5000/api/departmental-admin";
-const ADMIN_API_URL = "http://localhost:5000/api/admin";
 
 export const getDeptAdminToken = () => {
   return localStorage.getItem('deptAdminToken');
@@ -423,7 +419,6 @@ export const getAllInventorySystems = async () => {
 };
 
 export const addInventorySystem = async (system) => {
-  console.log("system",system)
   const response = await fetch(`${API_URL}/add-inventory`, {
     method: 'POST',
     headers: {
@@ -433,7 +428,6 @@ export const addInventorySystem = async (system) => {
     body: JSON.stringify(system),
   })
   const data = await response.json()
-  console.log(data)
   return data;
 };
 
@@ -447,7 +441,6 @@ export const updateInventorySystem = async (id, updates) => {
     body: JSON.stringify(updates),
   })
   const data = await response.json()
-  console.log(data)
   return data.system;
 };
 
@@ -460,7 +453,6 @@ export const getAllComponentSets = async () => {
     },
   })
   const data = await response.json()
-  console.log('[getAllComponentSets] Response:', data)
   return data.sets || [];
 };
 

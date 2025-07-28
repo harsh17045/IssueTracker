@@ -28,7 +28,6 @@ const TicketDetail = () => {
       try {
         setLoading(true);
         const result = await getDepartmentTickets();
-        console.log(result)
         if (result.success) {
           const foundTicket = result.tickets.find(t => t._id === ticketId);
           if (!foundTicket) {

@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api/admin";
+const API_URL = `${import.meta.env.VITE_API_URL}/api/admin`;
 
 const ALL_STATUSES = ['pending', 'in_progress', 'resolved', 'revoked'];
 
@@ -75,7 +75,6 @@ export const makeAuthorizedRequest = async (endpoint, options = {}) => {
 export const getAllTickets = async () => {
   try {
     const response = await makeAuthorizedRequest('/get-all-tickets');
-    console.log('All tickets:', response);
     return response.tickets; // Assuming the backend returns { tickets: [...] }
   } catch (error) {
     console.error('Error fetching all tickets:', error);
@@ -87,7 +86,6 @@ export const getAllTickets = async () => {
 export const getAllEmployees = async () => {
   try {
     const response = await makeAuthorizedRequest('/get-all-employees');
-    console.log('All employees:', response);
     return response.employees; // Backend returns { employees: [...] }
   } catch (error) {
     console.error('Error fetching all employees:', error);
@@ -98,7 +96,6 @@ export const getAllEmployees = async () => {
 export const getEmployeeDetails = async (employeeId) => {
   try {
     const response = await makeAuthorizedRequest(`/get-employee-details/${employeeId}`);
-    console.log('Employee details:', response);
     
     // Assuming backend returns { employee: {...}, tickets: [...] }
     if (!response.employee) {
@@ -168,7 +165,6 @@ export const deleteDepartment = async (deptId) => {
     const response = await makeAuthorizedRequest(`/delete-department/${deptId}`, {
       method: 'PUT'
     });
-    console.log('Department deleted successfully:', response);
     return response;
   } catch (error) {
     console.error('Error deleting department:', error);
@@ -251,9 +247,6 @@ export const addBuilding = async (buildingData) => {
     const token = localStorage.getItem('adminToken');
     if (!token) throw new Error('No authentication token found');
 
-    console.log('Building data:', buildingData);
-
-    // Format the data to match backend expectations
     const formattedData = {
       name: buildingData.name,
       floors: buildingData.floors.map((floor) => ({
@@ -288,8 +281,7 @@ export const addBuilding = async (buildingData) => {
 export const getAllDepartmentalAdmins = async () => {
   try {
     const response = await makeAuthorizedRequest('/get-departmental-admins');
-    console.log('Departmental admins:', response);
-
+    
     // Check if response.admin exists and is an array
     if (!response.admin || !Array.isArray(response.admin)) {
       throw new Error('Invalid admin data received');
@@ -365,15 +357,13 @@ export const getAttachment = async (filename) => {
   try {
     const token = localStorage.getItem('adminToken');
     if (!token) throw new Error('No authentication token found');
-    console.log('Fetching attachment for filename:', filename);
-
+   
     const response = await fetch(`${API_URL}/get-attachment/${filename}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
-    console.log('Attachment response:', response);
-
+    
     if (!response.ok) {
       throw new Error('Failed to fetch attachment');
     }
@@ -478,7 +468,6 @@ export const deleteBuilding = async (buildingId) => {
 
     const token = localStorage.getItem('adminToken');
     if (!token) throw new Error('No authentication token found');
-    console.log('Deleting building with ID:', buildingId);
     const response = await fetch(`${API_URL}/delete-building/${buildingId}`, {
       method: 'PUT',
       headers: {
@@ -506,7 +495,7 @@ export const getAvailableNetworkEngineerFloors = async () => {
   try {
     const token = localStorage.getItem('adminToken');
     if (!token) throw new Error('No authentication token found');
-    const response = await fetch('http://localhost:5000/api/admin/available-network-engineer-floors', {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/available-network-engineer-floors`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -524,7 +513,6 @@ export const updateNetworkEngineerLocations = async (adminId, locations) => {
   try {
     const token = getAdminToken();
     if (!token) throw new Error('No authentication token found');
-    console.log("locations", locations);
     const response = await fetch(`${API_URL}/update-network-locations/${adminId}`, {
       method: 'PUT',
       headers: {
@@ -534,7 +522,6 @@ export const updateNetworkEngineerLocations = async (adminId, locations) => {
       body: JSON.stringify({ locations }),
     });
     const data = await response.json();
-    console.log('Update network engineer locations response:', data);
     if (!response.ok) {
       throw new Error(data.message || 'Failed to update locations');
     }
@@ -549,7 +536,6 @@ export const updateNetworkEngineerLocations = async (adminId, locations) => {
 export const getComponentSets = async () => {
   try {
     const response = await makeAuthorizedRequest('/get-componentset');
-    console.log(response)
     return response.sets;
   } catch (error) {
     console.error('Error fetching component sets:', error);
