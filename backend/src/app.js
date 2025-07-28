@@ -11,24 +11,10 @@ const app = express();
   credentials:true
 })); */
 
-const allowedOrigins = [
-  "http://localhost:5173", // Employee frontend
-  "http://localhost:5174", // Admin frontend 
-  "http://localhost:5175",
-  "http://localhost:5176", // Admin frontend 
-];
-
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
+  origin: "*", // Allow all origins
+  methods: ["GET", "POST", "PUT", "DELETE"],
 }));
-
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
