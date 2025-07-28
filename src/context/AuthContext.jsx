@@ -6,7 +6,6 @@ import io from "socket.io-client";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  console.log("AuthProvider mounted");
   const [employee, setEmployee] = useState(() => {
     const stored = localStorage.getItem("employee");
     if (stored) {
@@ -85,7 +84,6 @@ export const AuthProvider = ({ children }) => {
 
   // --- SOCKET.IO for real-time ticket status updates ---
   const handleStatusUpdate = useCallback((data, connectionId = "?") => {
-    console.log(`[Socket][${connectionId}] handleStatusUpdate called`, data);
     toast.info(`Ticket '${data.title}' status updated to '${data.status}'`, {
       autoClose: 5000,
       position: "top-right",
@@ -117,8 +115,6 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const connectionId = Math.random().toString(36).substr(2, 5);
-    console.log(`[Socket][${connectionId}] useEffect running. employee:`, employee);
-    // Always extract id from token if not present
     let employeeId = employee?.id || employee?._id;
     if (!employeeId) {
       const token = localStorage.getItem("token");
@@ -127,7 +123,6 @@ export const AuthProvider = ({ children }) => {
         employeeId = payload.id || payload._id || payload.userId;
       }
     }
-    console.log(`[Socket][${connectionId}] employeeId:`, employeeId);
     if (!employeeId) {
       console.log(`[Socket][${connectionId}] No employeeId, skipping socket connection.`);
       return;
@@ -135,12 +130,11 @@ export const AuthProvider = ({ children }) => {
 
     // Clean up previous socket
     if (socketRef.current) {
-      console.log(`[Socket][${connectionId}] Disconnecting socket`);
+      
       socketRef.current.disconnect();
       socketRef.current = null;
     }
 
-    console.log(`[Socket][${connectionId}] Creating new socket connection`);
     const socket = io("http://localhost:5000", {
       transports: ["polling", "websocket"],
       withCredentials: true,
@@ -149,19 +143,16 @@ export const AuthProvider = ({ children }) => {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log(`[Socket][${connectionId}] Connected:`, socket.id);
-      // Join employee-specific room
       const roomName = `employee-${employeeId}`;
       socket.emit("join-room", roomName);
-      console.log(`[Socket][${connectionId}] Emitted join-room for: ${roomName}`);
     });
 
-    socket.on("room-joined", (data) => {
-      console.log(`[Socket][${connectionId}] Room joined:`, data);
+    socket.on("room-joined", () => {
+      
     });
 
-    socket.on("disconnect", (reason) => {
-      console.log(`[Socket][${connectionId}] Disconnected:`, reason);
+    socket.on("disconnect", () => {
+    
     });
 
     socket.on("ticket-status-updated", handleStatusUpdateWithId);
@@ -199,7 +190,6 @@ export const AuthProvider = ({ children }) => {
 
     return () => {
       if (socketRef.current) {
-        console.log(`[Socket][${connectionId}] Disconnecting socket`);
         socketRef.current.off("ticket-status-updated", handleStatusUpdateWithId);
         socketRef.current.off("new-comment");
         socketRef.current.disconnect();

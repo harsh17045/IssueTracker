@@ -72,7 +72,6 @@ const TicketDetail = () => {
         setLoading(true);
         const tickets = await getMyTickets();
         const foundTicket = tickets.find(t => t._id === ticketId);
-        console.log(foundTicket);
         if (!foundTicket) throw new Error('Ticket not found');
         setTicket(foundTicket);
       } catch (error) {
