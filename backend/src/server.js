@@ -22,7 +22,8 @@ const io = new Server(server, {
       "https://issue-tracker-omega-ochre.vercel.app",
     ],
     credentials: true,
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // add PATCH + OPTIONS
+    allowedHeaders: ["Content-Type", "Authorization"]
   },
 });
 // Attach io to app so controllers can use it
