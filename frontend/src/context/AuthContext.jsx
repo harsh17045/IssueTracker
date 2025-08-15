@@ -107,8 +107,7 @@ export const AuthProvider = ({ children }) => {
         const fetchedTickets = await getMyTickets();
         setTickets(fetchedTickets);
       } catch (error) {
-        console.error(`[Socket][${connectionId}] Error fetching tickets after status update:`, error);
-        toast.error("Failed to update tickets after status change");
+        toast.error("Failed to update tickets after status change",error);
       }
     })();
   }, [setNotifications, setUnreadCount, setTickets]);

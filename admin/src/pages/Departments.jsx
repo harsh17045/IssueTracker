@@ -25,7 +25,6 @@ const Departments = () => {
     try {
       setLoading(true);
       const data = await getAllDepartments();
-      console.log('Departments fetched:', data);
       setDepartments(data?.depts || []);
     } catch (error) {
       console.error('Error fetching departments:', error);

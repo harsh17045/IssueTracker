@@ -43,10 +43,8 @@ const LoginForm = ({ onRegisterClick }) => {
     try {
       const response = await loginUser(formData);
       const data = await response.json();
-      console.log("Response data:", data);
       if (data.message === "OTP sent to your email" || data.message === "Use the OTP sent to your mail") {
         setStep('otp');
-        console.log(step);
       } else {
         setErrors({ general: data.message || 'Login failed' });
       }
@@ -64,9 +62,6 @@ const LoginForm = ({ onRegisterClick }) => {
     setIsSubmitting(true);
     try {
       const res = await verifyUser({ email: formData.email, otp: formData.otp });
-      console.log("Full OTP verification response:", res);
-      console.log("Employee data from response:", res.employee);
-      console.log("Department data from response:", res.employee?.department);
       
       if (res.message === "Login Successfull") {
         // Ensure department data is properly structured
@@ -77,7 +72,6 @@ const LoginForm = ({ onRegisterClick }) => {
             name: res.employee.department.name || res.employee.department
           } : { _id: '', name: 'No Department' }
         };
-        console.log("Structured employee data:", employeeData);
         setEmployee(employeeData);
         localStorage.setItem('employee', JSON.stringify(employeeData));
         toast.success('Successfully logged in!');
@@ -86,7 +80,6 @@ const LoginForm = ({ onRegisterClick }) => {
         setErrors({ otp: res.message || 'Invalid OTP' });
       }
     } catch (error) {
-      console.error("Login error:", error);
       setErrors({ otp: 'Server error during OTP verification' });
     } finally {
       setIsSubmitting(false);
@@ -139,8 +132,6 @@ const LoginForm = ({ onRegisterClick }) => {
 
     setIsSubmitting(true);
     try {
-      console.log("Resetting password with data:", formData);
-      console.log("Resetting password with data:", formData.email, formData.otp, formData.newPassword);
       await resetPassword(formData.email, formData.otp, formData.newPassword);
       toast.success('Password reset successful. Please login with your new password.');
       setIsForgotPassword(false);

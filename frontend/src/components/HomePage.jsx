@@ -37,7 +37,6 @@ export default function HomePage() {
       const result = await getMyTickets();
       setTickets(result || []);
     } catch (error) {
-      console.error('Error fetching tickets:', error);
       setError(error.message);
       toast.error("Failed to fetch tickets.");
     } finally {

@@ -6,7 +6,7 @@ import { useDeptAuth } from '../../context/DeptAuthContext';
 import { updateInventorySystem, getLoggedInDepartmentalAdmin, getAllComponentSets } from '../../service/deptAuthService';
 import InventorySystemForm from '../../components/InventorySystemForm';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/dept-admin';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const InventoryDetail = () => {
   const { id } = useParams();
@@ -26,7 +26,7 @@ const InventoryDetail = () => {
     const fetchSystem = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/get-inventory?id=${id}`, {
+        const res = await fetch(`${API_URL}/api/dept-admin/get-inventory?id=${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

@@ -40,7 +40,6 @@ const DepartmentalAdmins = () => {
         getAllDepartmentalAdmins(),
         getAllDepartments()
       ]);
-      console.log('Fetched Departmental Admins:', adminsData);
       setDepartmentalAdmins(adminsData || []);
       // Filter departments to only include those with canResolve set to true
       const filteredDepartments = (departmentsData.depts || []).filter(dept => dept.canResolve);
@@ -153,8 +152,7 @@ const DepartmentalAdmins = () => {
         }
         submitData.buildingAssignments = buildingAssignments;
       }
-      console.log(submitData);
-      await createDepartmentalAdmin(submitData);
+        await createDepartmentalAdmin(submitData);
       toast.success('Departmental admin created successfully');
       setShowAddModal(false);
       setFormData({ name: '', email: '', department: '' });
