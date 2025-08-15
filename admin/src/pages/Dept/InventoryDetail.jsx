@@ -33,7 +33,6 @@ const InventoryDetail = () => {
           }
         });
         const data = await res.json();
-        console.log(data)
         if (!res.ok || !data.system) {
           toast.error(data.message || "System not found");
           setLoading(false);
