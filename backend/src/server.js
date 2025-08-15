@@ -3,6 +3,7 @@ import http from "http"
 import { Server } from "socket.io"
 import connectDB from "./database/database.js"
 import app from "./app.js"
+import cors from "cors";
 
 // Load environment variables
 dotenv.config()
@@ -16,12 +17,14 @@ const server = http.createServer(app)
 // Create Socket.IO server
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: [
+      "https://issue-tracker-nk3c.vercel.app",
+      "https://issue-tracker-omega-ochre.vercel.app",
+    ],
     credentials: true,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST"]
   },
-})
-
+});
 // Attach io to app so controllers can use it
 app.set("io", io)
 
