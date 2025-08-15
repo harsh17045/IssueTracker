@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import AuthPage from './components/authPage';
+import AuthPage from './components/AuthPage';
 import { AdminAuthProvider } from './context/AdminAuthContext';
 import { DeptAuthProvider } from './context/DeptAuthContext';
 import { NotificationProvider } from './context/NotificationContext';
