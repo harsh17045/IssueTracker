@@ -4,7 +4,12 @@ import { useDeptAuth } from "./DeptAuthContext";
 import { useNotifications } from "./NotificationContext";
 import notificationSound from "../utils/notificationSound";
 import { toast } from "react-toastify";
-const API_URL=`${import.meta.env.VITE_API_URL}/api/dept-admin`;
+
+// API base for REST calls (still includes /api/dept-admin)
+export const API_URL = `${import.meta.env.VITE_API_URL}/api/dept-admin`;
+
+// Socket should connect to backend root, NOT /api/dept-admin
+const SOCKET_URL = import.meta.env.VITE_API_URL;
 
 const DeptSocketContext = createContext();
 
@@ -21,7 +26,7 @@ export const DeptSocketProvider = ({ children }) => {
       socketRef.current = null;
     }
 
-    const socket = io(API_URL, {
+    const socket = io(SOCKET_URL, {
       transports: ["polling", "websocket"],
       withCredentials: true,
       timeout: 20000,
@@ -29,24 +34,31 @@ export const DeptSocketProvider = ({ children }) => {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      // Join rooms logic (same as in DepartmentDashboard)
       const roomsToJoin = [];
+
       if (typeof deptAdmin.department === "object" && deptAdmin.department._id) {
         roomsToJoin.push(deptAdmin.department._id.toString());
       }
-      const departmentName = typeof deptAdmin.department === "object" ? deptAdmin.department.name : deptAdmin.department;
+      const departmentName =
+        typeof deptAdmin.department === "object"
+          ? deptAdmin.department.name
+          : deptAdmin.department;
       if (departmentName) {
         roomsToJoin.push(`department-${departmentName.toLowerCase()}`);
       }
-      // Debug log for locations
+
       if (deptAdmin.isNetworkEngineer && deptAdmin.locations?.length > 0) {
         deptAdmin.locations.forEach((location) => {
-          const buildingId = typeof location.building === "object" ? location.building._id : location.building;
+          const buildingId =
+            typeof location.building === "object"
+              ? location.building._id
+              : location.building;
           if (buildingId && location.floor !== undefined) {
             roomsToJoin.push(`network-${buildingId}-${location.floor}`);
           }
         });
       }
+
       roomsToJoin.forEach((room) => {
         socket.emit("join-room", room);
       });
@@ -60,17 +72,14 @@ export const DeptSocketProvider = ({ children }) => {
       console.error("Socket connection error:", error);
     });
 
-    // Notification handlers
+    // ---- EVENT HANDLERS ----
     socket.on("new-ticket", (data) => {
-      console.log("[SOCKET] Received new-ticket event:", data);
+      console.log("[SOCKET] new-ticket:", data);
       notificationSound.play();
-      toast.info(
-        `New ticket: ${data.title}`,
-        {
-          autoClose: 5000,
-          position: "top-right",
-        }
-      );
+      toast.info(`New ticket: ${data.title}`, {
+        autoClose: 5000,
+        position: "top-right",
+      });
       addNotification({
         type: "new-ticket",
         title: "New Ticket Raised",
@@ -80,63 +89,54 @@ export const DeptSocketProvider = ({ children }) => {
         from: data.from,
         raisedAt: data.raisedAt,
       });
-      // Refresh unread tickets count
       refreshUnreadTickets();
     });
+
     socket.on("new-comment", (data) => {
-      console.log("[SOCKET] Received new-comment event:", data);
+      console.log("[SOCKET] new-comment:", data);
       notificationSound.play();
       toast.info(
         data.employeeName
           ? `New comment from ${data.employeeName} on: ${data.title}`
           : `New comment on: ${data.title}`,
-        {
-          autoClose: 5000,
-          position: "top-right",
-        }
+        { autoClose: 5000, position: "top-right" }
       );
       addNotification({
         type: "new-comment",
         title: "New Comment",
-        message: `New comment from ${data.employeeName || "Employee"} on: ${data.title}`,
+        message: `New comment from ${data.employeeName || "Employee"} on: ${
+          data.title
+        }`,
         ticketId: data.ticketId,
       });
-      // Refresh unread tickets count
       refreshUnreadTickets();
     });
 
-    // Handle ticket revoked event
     socket.on("ticket-revoked", (data) => {
-      console.log("[SOCKET] Received ticket-revoked event:", data);
+      console.log("[SOCKET] ticket-revoked:", data);
       notificationSound.play();
-      toast.info(
-        `Ticket revoked: ${data.title}`,
-        {
-          autoClose: 5000,
-          position: "top-right",
-        }
-      );
+      toast.info(`Ticket revoked: ${data.title}`, {
+        autoClose: 5000,
+        position: "top-right",
+      });
       addNotification({
         type: "ticket-revoked",
         title: "Ticket Revoked",
-        message: data.message || `Ticket titled "${data.title}" has been revoked by the employee.`,
+        message:
+          data.message ||
+          `Ticket titled "${data.title}" has been revoked by the employee.`,
         ticketId: data.ticketId,
       });
-      // Refresh unread tickets count
       refreshUnreadTickets();
     });
 
-    // Handle status update event
     socket.on("status-update", (data) => {
-      console.log("[SOCKET] Received status-update event:", data);
+      console.log("[SOCKET] status-update:", data);
       notificationSound.play();
-      toast.info(
-        `Ticket status updated: ${data.title} - ${data.status}`,
-        {
-          autoClose: 5000,
-          position: "top-right",
-        }
-      );
+      toast.info(`Ticket status updated: ${data.title} - ${data.status}`, {
+        autoClose: 5000,
+        position: "top-right",
+      });
       addNotification({
         type: "status-update",
         title: "Status Updated",
@@ -146,17 +146,13 @@ export const DeptSocketProvider = ({ children }) => {
       });
     });
 
-    // Handle ticket updated event
     socket.on("ticket-updated", (data) => {
-      console.log("[SOCKET] Received ticket-updated event:", data);
+      console.log("[SOCKET] ticket-updated:", data);
       notificationSound.play();
-      toast.info(
-        `Ticket updated: ${data.title}`,
-        {
-          autoClose: 5000,
-          position: "top-right",
-        }
-      );
+      toast.info(`Ticket updated: ${data.title}`, {
+        autoClose: 5000,
+        position: "top-right",
+      });
       addNotification({
         type: "ticket-updated",
         title: "Ticket Updated",
@@ -180,4 +176,4 @@ export const DeptSocketProvider = ({ children }) => {
   );
 };
 
-export const useDeptSocket = () => useContext(DeptSocketContext); 
+export const useDeptSocket = () => useContext(DeptSocketContext);
