@@ -4,6 +4,7 @@ import { useDeptAuth } from "./DeptAuthContext";
 import { useNotifications } from "./NotificationContext";
 import notificationSound from "../utils/notificationSound";
 import { toast } from "react-toastify";
+const API_URL=`${import.meta.env.VITE_API_URL}/api/dept-admin`;
 
 const DeptSocketContext = createContext();
 
@@ -20,7 +21,7 @@ export const DeptSocketProvider = ({ children }) => {
       socketRef.current = null;
     }
 
-    const socket = io("http://localhost:5000", {
+    const socket = io(API_URL, {
       transports: ["polling", "websocket"],
       withCredentials: true,
       timeout: 20000,
